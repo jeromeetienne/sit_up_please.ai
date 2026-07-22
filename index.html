@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f3d35" />
+    <title>Sit Up, Please</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <p class="eyebrow">Private posture companion</p>
+        <h1>Sit up, please.</h1>
+        <p class="intro">Your camera feed stays on this device. Nothing is uploaded.</p>
+      </header>
+
+      <section class="monitor" aria-labelledby="monitor-title">
+        <div class="camera-panel">
+          <video id="camera" autoplay muted playsinline aria-label="Camera preview"></video>
+          <canvas id="overlay" aria-hidden="true"></canvas>
+          <div id="camera-placeholder" class="camera-placeholder">Camera is off</div>
+        </div>
+        <div class="monitor-details">
+          <p class="eyebrow">Live monitor</p>
+          <h2 id="monitor-title">Ready when you are</h2>
+          <p id="status" class="status" role="status">Start the camera to test landmark tracking.</p>
+          <dl class="measurements">
+            <div><dt>Tracking</dt><dd id="tracking-value">—</dd></div>
+            <div><dt>Samples</dt><dd id="sample-value">0</dd></div>
+            <div><dt>Frame rate</dt><dd id="fps-value">—</dd></div>
+          </dl>
+          <button id="start-camera" type="button">Start camera</button>
+        </div>
+      </section>
+
+      <section class="privacy-note" aria-label="Privacy">
+        <strong>On-device by design.</strong>
+        <span>Camera frames and pose landmarks are processed in your browser only.</span>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
