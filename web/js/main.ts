@@ -11,9 +11,7 @@ import '../css/style.css';
  */
 const ANALYSIS_INTERVAL_MS = 1_000 / 30;
 const CALIBRATION_DURATION_MS = 3_000;
-const WARNING_DELAY_MS = 30_000;
 const REMINDER_COOLDOWN_MS = 10 * 60_000;
-const SNOOZE_DURATION_MS = 10 * 60_000;
 const BASELINE_STORAGE_KEY = 'sit-up-please.posture-baseline.v1';
 
 const video = document.querySelector<HTMLVideoElement>('#camera');
@@ -21,8 +19,6 @@ const overlay = document.querySelector<HTMLCanvasElement>('#overlay');
 const startButton = document.querySelector<HTMLButtonElement>('#start-camera');
 const calibrateButton = document.querySelector<HTMLButtonElement>('#calibrate');
 const pauseButton = document.querySelector<HTMLButtonElement>('#pause-monitoring');
-const acknowledgeButton = document.querySelector<HTMLButtonElement>('#acknowledge');
-const snoozeButton = document.querySelector<HTMLButtonElement>('#snooze');
 const status = document.querySelector<HTMLElement>('#status');
 const title = document.querySelector<HTMLElement>('#monitor-title');
 const placeholder = document.querySelector<HTMLElement>('#camera-placeholder');
@@ -30,13 +26,10 @@ const trackingValue = document.querySelector<HTMLElement>('#tracking-value');
 const referenceValue = document.querySelector<HTMLElement>('#reference-value');
 const fpsValue = document.querySelector<HTMLElement>('#fps-value');
 const calibrationProgress = document.querySelector<HTMLElement>('#calibration-progress');
-const postureAlert = document.querySelector<HTMLElement>('#posture-alert');
-const postureAlertTitle = document.querySelector<HTMLElement>('#posture-alert-title');
-const postureAlertDescription = document.querySelector<HTMLElement>('#posture-alert-description');
 const debugCheckbox = document.querySelector<HTMLInputElement>('#show-debug');
 const notificationCheckbox = document.querySelector<HTMLInputElement>('#enable-notifications');
 
-if (!video || !overlay || !startButton || !calibrateButton || !pauseButton || !acknowledgeButton || !snoozeButton || !status || !title || !placeholder || !trackingValue || !referenceValue || !fpsValue || !calibrationProgress || !postureAlert || !postureAlertTitle || !postureAlertDescription || !debugCheckbox || !notificationCheckbox) {
+if (!video || !overlay || !startButton || !calibrateButton || !pauseButton || !status || !title || !placeholder || !trackingValue || !referenceValue || !fpsValue || !calibrationProgress || !debugCheckbox || !notificationCheckbox) {
 	throw new Error('The posture monitor could not find its required interface elements.');
 }
 
@@ -52,9 +45,6 @@ const trackingDisplay = trackingValue;
 const referenceDisplay = referenceValue;
 const analysisRateDisplay = fpsValue;
 const calibrationDisplay = calibrationProgress;
-const alertDisplay = postureAlert;
-const alertTitle = postureAlertTitle;
-const alertDescription = postureAlertDescription;
 const debugToggle = debugCheckbox;
 const notificationToggle = notificationCheckbox;
 const canvasContext = landmarkCanvas.getContext('2d');
@@ -68,7 +58,7 @@ type PostureMeasurement = { faceScale: number; faceX: number; faceY: number; hea
 /** The averaged posture measurement saved in browser storage. */
 type PostureBaseline = PostureMeasurement;
 /** The current user-facing monitoring state. */
-type MonitoringMode = 'ready' | 'calibrating' | 'monitoring' | 'paused' | 'snoozed' | 'warning';
+type MonitoringMode = 'ready' | 'calibrating' | 'monitoring' | 'paused';
 /** The strongest direction in which live posture differs from calibration. */
 type PostureDirection = 'forward' | 'backward' | 'left' | 'right';
 
@@ -81,9 +71,12 @@ let latestMeasurement: PostureMeasurement | undefined;
 let lastAnalysisAt = 0;
 let analysisCount = 0;
 let badPostureSince = 0;
-let snoozedUntil = 0;
 let reminderCooldownUntil = 0;
 let activeDirection: PostureDirection | undefined;
+/** The visible desktop notification for the current posture change, if any. */
+let activeNotification: Notification | undefined;
+/** Audio context prepared from the Start camera user action for alert tones. */
+let notificationAudio: AudioContext | undefined;
 
 /**
  * Reads and validates the saved baseline from local browser storage.
@@ -287,7 +280,7 @@ function finishCalibration(): void {
 	updateReferenceDisplay();
 	showCalibrationProgress(undefined);
 	setTitle('Posture looks good');
-	setStatus('Monitoring gently. A reminder appears only after 30 seconds away from your calibrated posture.');
+  setStatus('Monitoring gently. A reminder appears immediately when your posture moves away from calibration.');
 }
 
 /**
@@ -303,7 +296,7 @@ function beginCalibration(): void {
 	calibrationStartedAt = performance.now();
 	calibrationMeasurements = [];
 	badPostureSince = 0;
-	alertDisplay.hidden = true;
+	clearNotification();
 	calibrationButton.disabled = true;
 	monitoringPauseButton.disabled = true;
 	setTitle('Hold your good posture');
@@ -321,7 +314,7 @@ function pauseMonitoring(): void {
 	} else {
 		mode = 'paused';
 		badPostureSince = 0;
-		alertDisplay.hidden = true;
+		clearNotification();
 		monitoringPauseButton.textContent = 'Resume monitoring';
 		setTitle('Monitoring paused');
 		setStatus('Posture reminders are paused.');
@@ -329,74 +322,77 @@ function pauseMonitoring(): void {
 }
 
 /**
- * Sends the optional desktop notification for a sustained posture warning.
- * The in-page warning remains available if notifications are unsupported.
+ * Creates the browser audio context from a direct user action. This lets a
+ * later posture notification play a tone without relying on autoplay access.
  */
-function notifyUser(direction: PostureDirection): void {
-	if (notificationToggle.checked && 'Notification' in window && Notification.permission === 'granted') {
-		new Notification(directionLabel(direction), {
-			body: `${directionDescription(direction)} This has continued for 30 seconds.`,
-			tag: 'sit-up-please-posture-reminder',
-			requireInteraction: true,
-		});
+function prepareNotificationAudio(): void {
+	if (!notificationAudio) {
+		notificationAudio = new AudioContext();
 	}
 }
 
+/** Plays a brief two-note tone alongside a desktop posture notification. */
+function playNotificationSound(): void {
+	if (!notificationAudio) return;
+
+	void notificationAudio.resume().then(() => {
+		const oscillator = notificationAudio?.createOscillator();
+		const gain = notificationAudio?.createGain();
+		if (!oscillator || !gain || !notificationAudio) return;
+
+		const now = notificationAudio.currentTime;
+		oscillator.type = 'sine';
+		oscillator.frequency.setValueAtTime(660, now);
+		oscillator.frequency.setValueAtTime(880, now + 0.12);
+		gain.gain.setValueAtTime(0.0001, now);
+		gain.gain.exponentialRampToValueAtTime(0.15, now + 0.02);
+		gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
+		oscillator.connect(gain).connect(notificationAudio.destination);
+		oscillator.start(now);
+		oscillator.stop(now + 0.3);
+	}).catch(() => {
+		// The visual browser notification remains available if audio is blocked.
+	});
+}
+
 /**
- * Enters warning mode and presents the current directional reminder in the page.
- * Desktop notifications are already sent when a posture direction first appears.
+ * Sends the optional desktop notification for the current posture warning.
+ * The visible status message remains available if notifications are unsupported.
  */
-function showReminder(now: number, direction: PostureDirection): void {
-	mode = 'warning';
-	reminderCooldownUntil = now + REMINDER_COOLDOWN_MS;
-	alertDisplay.hidden = false;
-	alertTitle.textContent = directionLabel(direction);
-  alertDescription.textContent = `${directionDescription(direction)} This has continued for 30 seconds.`;
-  setTitle(directionLabel(direction));
-  setStatus(`${directionDescription(direction)} Adjust when you are ready.`);
+function notifyUser(direction: PostureDirection): void {
+	if (notificationToggle.checked && 'Notification' in window && Notification.permission === 'granted') {
+		activeNotification?.close();
+		activeNotification = new Notification(directionLabel(direction), {
+			body: directionDescription(direction),
+			tag: 'sit-up-please-posture-reminder',
+			requireInteraction: true,
+		});
+		playNotificationSound();
+	}
 }
 
-/** Clears the current warning after the person confirms an adjustment. */
-function acknowledgeReminder(): void {
-	mode = 'monitoring';
-	badPostureSince = 0;
-	alertDisplay.hidden = true;
-	setTitle('Posture looks good');
-	setStatus('Thanks. Monitoring will continue quietly.');
-}
-
-/** Temporarily suppresses new posture reminders for ten minutes. */
-function snoozeReminders(): void {
-	mode = 'snoozed';
-	snoozedUntil = performance.now() + SNOOZE_DURATION_MS;
-	badPostureSince = 0;
-	alertDisplay.hidden = true;
-	setTitle('Reminders snoozed');
-	setStatus('Posture reminders are snoozed for 10 minutes.');
+/** Closes the active desktop notification once the posture is corrected. */
+function clearNotification(): void {
+	activeNotification?.close();
+	activeNotification = undefined;
 }
 
 /**
  * Advances monitoring state from one live measurement.
  *
- * A posture direction must remain outside the calibrated range for the full
- * warning delay before a reminder appears.
+ * A notification is immediate, while the cooldown prevents repeated desktop
+ * alerts for the same period of incorrect posture.
  */
 function updateMonitoring(measurement: PostureMeasurement, now: number): void {
 	if (!baseline || mode === 'ready' || mode === 'calibrating' || mode === 'paused') return;
 
-	if (mode === 'snoozed') {
-		if (now < snoozedUntil) return;
-		mode = 'monitoring';
-		setTitle('Posture looks good');
-		setStatus('Snooze ended. Monitoring gently.');
-	}
-
-	if (mode === 'warning') return;
 	const direction = findPostureDirection(measurement, baseline);
 	if (!direction) {
 		const wasDrifting = badPostureSince > 0;
 		badPostureSince = 0;
+		reminderCooldownUntil = 0;
 		activeDirection = undefined;
+		clearNotification();
 		if (wasDrifting) {
 			setTitle('Posture looks good');
 			setStatus('Your posture is back near the calibrated reference. Monitoring gently.');
@@ -404,17 +400,17 @@ function updateMonitoring(measurement: PostureMeasurement, now: number): void {
 		return;
 	}
 
-  if (badPostureSince === 0) {
-    badPostureSince = now;
-    activeDirection = direction;
-    setTitle(directionLabel(direction));
-    if (now >= reminderCooldownUntil) {
-      notifyUser(direction);
-      reminderCooldownUntil = now + REMINDER_COOLDOWN_MS;
-    }
-    setStatus(`${directionDescription(direction)} A desktop notification is sent when notifications are enabled.`);
-    return;
-  }
+	if (badPostureSince === 0) {
+		badPostureSince = now;
+		activeDirection = direction;
+		setTitle(directionLabel(direction));
+		if (now >= reminderCooldownUntil) {
+			notifyUser(direction);
+			reminderCooldownUntil = now + REMINDER_COOLDOWN_MS;
+		}
+		setStatus(`${directionDescription(direction)} A desktop notification is sent when notifications are enabled.`);
+		return;
+	}
 
 	if (activeDirection !== direction) {
     activeDirection = direction;
@@ -422,9 +418,6 @@ function updateMonitoring(measurement: PostureMeasurement, now: number): void {
     setStatus(`${directionDescription(direction)} A desktop notification is sent when notifications are enabled.`);
 	}
 
-	if (now >= reminderCooldownUntil && now - badPostureSince >= WARNING_DELAY_MS) {
-		showReminder(now, activeDirection ?? direction);
-	}
 }
 
 /**
@@ -459,7 +452,7 @@ function processLandmarks(landmarks: FacialLandmark[] | undefined, now: number):
 			calibrationStartedAt = now;
 			calibrationMeasurements = [];
 			showCalibrationProgress('Face lost. Move back into view and hold still.');
-		} else if (mode !== 'paused' && mode !== 'snoozed') {
+		} else if (mode !== 'paused') {
 			setTitle('Move back into view');
 			setStatus('Keep your face in the camera frame to continue monitoring.');
 		}
@@ -525,6 +518,7 @@ async function setBrowserNotifications(): Promise<void> {
  */
 async function startCamera(): Promise<void> {
 	cameraButton.disabled = true;
+	prepareNotificationAudio();
 	setStatus('Requesting camera access…');
 
 	try {
@@ -571,8 +565,6 @@ async function startCamera(): Promise<void> {
 cameraButton.addEventListener('click', () => void startCamera());
 calibrationButton.addEventListener('click', beginCalibration);
 monitoringPauseButton.addEventListener('click', pauseMonitoring);
-acknowledgeButton.addEventListener('click', acknowledgeReminder);
-snoozeButton.addEventListener('click', snoozeReminders);
 notificationToggle.addEventListener('change', () => void setBrowserNotifications());
 debugToggle.addEventListener('change', () => {
 	if (!debugToggle.checked && canvasContext) {

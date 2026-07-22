@@ -15,8 +15,8 @@ The initial implementation provides:
 - on-device facial landmark detection with an optional full-face mesh overlay;
 - an eight-second calibration that stores a reference posture in the browser;
 - posture analysis at 30 frames per second;
-- an in-page reminder after 30 seconds away from the calibrated reference; and
-- recalibration, pause, acknowledgement, and ten-minute snooze controls.
+- an immediate in-page reminder when posture moves away from the calibrated reference; and
+- recalibration and pause-monitoring controls.
 
 Browser notifications are optional. If the browser does not support them or the
 person does not grant permission, the in-page reminder still works.
