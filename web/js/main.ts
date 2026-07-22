@@ -1,4 +1,5 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 import '../css/style.css';
 
 /**
@@ -342,18 +343,17 @@ function notifyUser(direction: PostureDirection): void {
 }
 
 /**
- * Enters warning mode, starts the reminder cooldown, and presents the current
- * directional reminder both in the page and, if enabled, as a notification.
+ * Enters warning mode and presents the current directional reminder in the page.
+ * Desktop notifications are already sent when a posture direction first appears.
  */
 function showReminder(now: number, direction: PostureDirection): void {
 	mode = 'warning';
 	reminderCooldownUntil = now + REMINDER_COOLDOWN_MS;
 	alertDisplay.hidden = false;
 	alertTitle.textContent = directionLabel(direction);
-	alertDescription.textContent = `${directionDescription(direction)} This has continued for 30 seconds.`;
-	setTitle(directionLabel(direction));
-	setStatus(`${directionDescription(direction)} Adjust when you are ready.`);
-	notifyUser(direction);
+  alertDescription.textContent = `${directionDescription(direction)} This has continued for 30 seconds.`;
+  setTitle(directionLabel(direction));
+  setStatus(`${directionDescription(direction)} Adjust when you are ready.`);
 }
 
 /** Clears the current warning after the person confirms an adjustment. */
@@ -404,18 +404,22 @@ function updateMonitoring(measurement: PostureMeasurement, now: number): void {
 		return;
 	}
 
-	if (badPostureSince === 0) {
-		badPostureSince = now;
-		activeDirection = direction;
-		setTitle(directionLabel(direction));
-		setStatus(`${directionDescription(direction)} A reminder appears only if it continues.`);
-		return;
-	}
+  if (badPostureSince === 0) {
+    badPostureSince = now;
+    activeDirection = direction;
+    setTitle(directionLabel(direction));
+    if (now >= reminderCooldownUntil) {
+      notifyUser(direction);
+      reminderCooldownUntil = now + REMINDER_COOLDOWN_MS;
+    }
+    setStatus(`${directionDescription(direction)} A desktop notification is sent when notifications are enabled.`);
+    return;
+  }
 
 	if (activeDirection !== direction) {
-		activeDirection = direction;
-		setTitle(directionLabel(direction));
-		setStatus(`${directionDescription(direction)} A reminder appears only if it continues.`);
+    activeDirection = direction;
+    setTitle(directionLabel(direction));
+    setStatus(`${directionDescription(direction)} A desktop notification is sent when notifications are enabled.`);
 	}
 
 	if (now >= reminderCooldownUntil && now - badPostureSince >= WARNING_DELAY_MS) {

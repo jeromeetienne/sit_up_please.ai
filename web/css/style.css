@@ -48,6 +48,10 @@ button:disabled { cursor: wait; opacity: 0.7; }
 .posture-alert .secondary-action { border-color: rgb(20 52 45 / 40%); color: #14342d; }
 .privacy-note { align-items: baseline; color: #52635e; display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 28px 8px; }
 .privacy-note strong { color: #1b2d29; }
+.site-footer { color: #52635e; margin: 48px 8px 0; text-align: center; }
+.site-footer a { color: #1b2d29; font-weight: 700; }
+.footer-heart { color: #d8374b; margin-inline: 0.15em; }
+.visually-hidden { height: 1px; margin: -1px; overflow: hidden; position: absolute; width: 1px; clip: rect(0 0 0 0); }
 
 @media (max-width: 760px) {
   .app-shell { width: min(100% - 32px, 1120px); padding: 48px 0; }
