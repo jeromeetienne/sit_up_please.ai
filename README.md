@@ -1,8 +1,8 @@
 # Sit Up, Please
 
-Sit Up, Please is a browser-based posture monitor. It uses a webcam and an
-on-device pose model to help a person notice when posture has drifted from a
-calibrated reference position.
+Sit Up, Please is a browser-based posture monitor. It uses a webcam and the
+on-device MediaPipe Face Landmarker model to help a person notice sustained
+movement away from a calibrated reference posture.
 
 Camera frames and pose landmarks are processed in the browser. The application
 does not upload webcam frames.
@@ -12,12 +12,14 @@ does not upload webcam frames.
 The initial implementation provides:
 
 - a browser interface for starting the webcam;
-- on-device BlazePose landmark detection using the WebGL backend;
-- a live view of detected upper-body landmarks, samples, and frame rate; and
-- camera permission and pose-model error messages.
+- on-device facial landmark detection with an optional full-face mesh overlay;
+- an eight-second calibration that stores a reference posture in the browser;
+- posture analysis at 30 frames per second;
+- an in-page reminder after 30 seconds away from the calibrated reference; and
+- recalibration, pause, acknowledgement, and ten-minute snooze controls.
 
-Calibration, posture scoring, sustained-slouch detection, and notifications are
-still to be implemented.
+Browser notifications are optional. If the browser does not support them or the
+person does not grant permission, the in-page reminder still works.
 
 ## Requirements
 
@@ -31,9 +33,9 @@ npm install
 npm run dev
 ```
 
-Open the local address printed by Vite, select **Start camera**, and allow
-camera access when the browser asks. Position your face and shoulders in the
-camera frame to see the landmark tracker.
+Open the local HTTP address printed by Vite, select **Start camera**, and allow
+camera access when the browser asks. Sit comfortably upright, then select
+**Calibrate posture** and hold the position for three seconds.
 
 ## Validate the project
 
@@ -46,11 +48,12 @@ The build performs strict TypeScript checking and creates a production bundle in
 
 ## Privacy and limitations
 
-The application is intended to run entirely on the device. It can infer posture
-from visible upper-body landmarks, but it cannot directly measure spinal
-curvature. Tracking quality depends on camera position, lighting, and whether
-the head and shoulders are visible.
+The application is intended to run entirely on the device. It is a reminder for
+movement away from a calibrated camera position, not a medical posture
+assessment. Face Landmarker does not measure shoulder position, torso position,
+or spinal curvature. Tracking quality depends on camera position, lighting, and
+whether the face is visible.
 
 ## Project issue
 
-Implementation work is tracked in [issue #3](https://github.com/jeromeetienne/sit_up_please.ai/issues/3).
+Implementation work is tracked in [issue #5](https://github.com/jeromeetienne/sit_up_please.ai/issues/5).
