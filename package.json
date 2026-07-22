@@ -9,9 +9,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@tensorflow-models/pose-detection": "^2.1.3",
-    "@tensorflow/tfjs-backend-webgl": "^4.22.0",
-    "@tensorflow/tfjs-core": "^4.22.0"
+    "@mediapipe/pose": "^0.5.1675469404",
+    "@tensorflow-models/pose-detection": "^2.1.3"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",
