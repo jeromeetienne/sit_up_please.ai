@@ -47,6 +47,7 @@ button:disabled { cursor: wait; opacity: 0.7; }
 .site-footer { color: #52635e; margin: 48px 8px 0; text-align: center; }
 .site-footer a { color: #1b2d29; font-weight: 700; }
 .footer-heart { color: #d8374b; margin-inline: 0.15em; }
+.footer-repository { font-size: 0.95em; margin-left: 0.35em; }
 .visually-hidden { height: 1px; margin: -1px; overflow: hidden; position: absolute; width: 1px; clip: rect(0 0 0 0); }
 
 @media (max-width: 760px) {
