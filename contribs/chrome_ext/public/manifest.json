@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "Sit Up, Please",
+  "description": "A private, on-device posture reminder.",
+  "version": "0.1.0",
+  "permissions": ["notifications"],
+  "host_permissions": [
+    "https://cdn.jsdelivr.net/*",
+    "https://storage.googleapis.com/*"
+  ],
+  "action": {
+    "default_title": "Open Sit Up, Please"
+  },
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+  }
+}

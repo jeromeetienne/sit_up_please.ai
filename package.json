@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:chrome-extension": "vite build --config contribs/chrome_ext/vite.config.ts",
     "deploy": "npm run build && gh-pages -d dist",
     "test": "vitest run"
   },

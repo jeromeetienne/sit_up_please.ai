@@ -1,6 +1,7 @@
 # Installed dependencies and generated application files.
 node_modules/
 dist/
+contribs/chrome_ext/dist/
 
 # Local configuration. Keep the example configuration file versioned.
 .env

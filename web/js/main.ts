@@ -13,6 +13,7 @@ const ANALYSIS_INTERVAL_MS = 1_000 / 30;
 const CALIBRATION_DURATION_MS = 3_000;
 const REMINDER_COOLDOWN_MS = 10 * 60_000;
 const BASELINE_STORAGE_KEY = 'sit-up-please.posture-baseline.v1';
+const MEDIA_PIPE_WASM_CDN_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm';
 
 const video = document.querySelector<HTMLVideoElement>('#camera');
 const overlay = document.querySelector<HTMLCanvasElement>('#overlay');
@@ -77,6 +78,15 @@ let activeDirection: PostureDirection | undefined;
 let activeNotification: Notification | undefined;
 /** Audio context prepared from the Start camera user action for alert tones. */
 let notificationAudio: AudioContext | undefined;
+
+/** Returns the local extension WebAssembly directory when running in Chrome. */
+function visionWasmPath(): string {
+	const extensionRuntime = (globalThis as typeof globalThis & {
+		chrome?: { runtime?: { id?: string; getURL?: (path: string) => string } };
+	}).chrome?.runtime;
+	if (extensionRuntime?.id && extensionRuntime.getURL) return extensionRuntime.getURL('wasm');
+	return MEDIA_PIPE_WASM_CDN_URL;
+}
 
 /**
  * Reads and validates the saved baseline from local browser storage.
@@ -531,7 +541,7 @@ async function startCamera(): Promise<void> {
 		resizeOverlay();
 		cameraPlaceholder.hidden = true;
 		setStatus('Loading the on-device face model…');
-		const vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm');
+		const vision = await FilesetResolver.forVisionTasks(visionWasmPath());
 		faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
 			baseOptions: {
 				delegate: 'GPU',
@@ -556,7 +566,11 @@ async function startCamera(): Promise<void> {
 		}
 		void trackFace();
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Unknown error';
+		const message = error instanceof Error
+			? error.message
+			: typeof error === 'string'
+				? error
+				: 'The browser returned an unrecognised startup error.';
 		setStatus(`Camera or face model could not start: ${message}`);
 		cameraButton.disabled = false;
 	}

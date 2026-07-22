@@ -11,5 +11,5 @@
     "noEmit": true,
     "strict": true
   },
-  "include": ["web"]
+  "include": ["web", "contribs/chrome_ext"]
 }
