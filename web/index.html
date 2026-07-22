@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f3d35" />
+    <title>Sit Up, Please</title>
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <p class="eyebrow">Private posture companion</p>
+        <h1>Sit up, please.</h1>
+        <p class="intro">Your camera feed stays on this device. Nothing is uploaded.</p>
+      </header>
+
+      <section class="monitor" aria-labelledby="monitor-title">
+        <div class="camera-panel">
+          <video id="camera" autoplay muted playsinline aria-label="Camera preview"></video>
+          <canvas id="overlay" aria-hidden="true"></canvas>
+          <div id="camera-placeholder" class="camera-placeholder">Camera is off</div>
+        </div>
+        <div class="monitor-details">
+          <p class="eyebrow">Live monitor</p>
+          <h2 id="monitor-title">Ready when you are</h2>
+          <p id="status" class="status" role="status">Start the camera to test landmark tracking.</p>
+          <p id="calibration-progress" class="calibration-progress" hidden></p>
+          <dl class="measurements">
+            <div><dt>Tracking</dt><dd id="tracking-value">—</dd></div>
+            <div><dt>Reference posture</dt><dd id="reference-value">Not calibrated</dd></div>
+            <div><dt>Analysis rate</dt><dd id="fps-value">—</dd></div>
+          </dl>
+          <div class="actions">
+            <button id="start-camera" type="button">Start camera</button>
+            <button id="calibrate" type="button" class="secondary-action" disabled>Calibrate posture</button>
+            <button id="pause-monitoring" type="button" class="secondary-action" disabled>Pause monitoring</button>
+            <label class="debug-toggle" for="show-debug">
+              <input id="show-debug" type="checkbox" checked />
+              Show facial landmark overlay
+            </label>
+            <label class="debug-toggle" for="enable-notifications">
+              <input id="enable-notifications" type="checkbox" disabled />
+              Use browser notifications
+            </label>
+          </div>
+          <section id="posture-alert" class="posture-alert" role="alert" hidden>
+            <strong id="posture-alert-title">Time to check your posture.</strong>
+            <span id="posture-alert-description">Your posture has moved away from the calibrated reference for 30 seconds.</span>
+            <div class="alert-actions">
+              <button id="acknowledge" type="button">I adjusted</button>
+              <button id="snooze" type="button" class="secondary-action">Snooze 10 min</button>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="privacy-note" aria-label="Privacy">
+        <strong>On-device by design.</strong>
+        <span>Camera frames and facial landmarks are processed in your browser only.</span>
+      </section>
+
+      <footer class="site-footer">
+        Made with <i class="bi bi-heart-fill footer-heart" aria-hidden="true"></i><span class="visually-hidden">love</span> by
+        <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank" rel="noreferrer">Jerome Etienne</a>
+      </footer>
+    </main>
+    <script type="module" src="./js/main.ts"></script>
+  </body>
+</html>

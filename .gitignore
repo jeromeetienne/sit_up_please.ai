@@ -1,0 +1,12 @@
+# Installed dependencies and generated application files.
+node_modules/
+dist/
+
+# Local configuration. Keep the example configuration file versioned.
+.env
+.env.*
+!.env.example
+
+# Operating-system metadata and test reports.
+.DS_Store
+coverage/
