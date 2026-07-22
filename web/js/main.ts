@@ -1,6 +1,13 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 import '../css/style.css';
 
+/**
+ * Browser-only posture reminder driven by MediaPipe facial landmarks.
+ *
+ * The application stores a local reference posture and compares subsequent
+ * face size and horizontal position with that reference. No camera frame or
+ * facial landmark is sent to an application server.
+ */
 const ANALYSIS_INTERVAL_MS = 1_000 / 30;
 const CALIBRATION_DURATION_MS = 3_000;
 const WARNING_DELAY_MS = 30_000;
@@ -51,11 +58,17 @@ const debugToggle = debugCheckbox;
 const notificationToggle = notificationCheckbox;
 const canvasContext = landmarkCanvas.getContext('2d');
 
+/** A normalized facial point returned by Face Landmarker. */
 type FacialLandmark = { x: number; y: number };
+/** A pair of facial point indices used to draw an overlay line. */
 type LandmarkConnection = { start: number; end: number };
+/** Camera-relative values captured during calibration and live monitoring. */
 type PostureMeasurement = { faceScale: number; faceX: number; faceY: number; headTilt: number };
+/** The averaged posture measurement saved in browser storage. */
 type PostureBaseline = PostureMeasurement;
+/** The current user-facing monitoring state. */
 type MonitoringMode = 'ready' | 'calibrating' | 'monitoring' | 'paused' | 'snoozed' | 'warning';
+/** The strongest direction in which live posture differs from calibration. */
 type PostureDirection = 'forward' | 'backward' | 'left' | 'right';
 
 let faceLandmarker: FaceLandmarker | undefined;
@@ -71,6 +84,11 @@ let snoozedUntil = 0;
 let reminderCooldownUntil = 0;
 let activeDirection: PostureDirection | undefined;
 
+/**
+ * Reads and validates the saved baseline from local browser storage.
+ *
+ * Older or malformed data is ignored so that a new calibration can replace it.
+ */
 function loadBaseline(): PostureBaseline | undefined {
 	try {
 		const storedBaseline = localStorage.getItem(BASELINE_STORAGE_KEY);
@@ -85,27 +103,39 @@ function loadBaseline(): PostureBaseline | undefined {
 	}
 }
 
+/** Updates the live explanatory text announced to assistive technology. */
 function setStatus(message: string): void {
 	statusMessage.textContent = message;
 }
 
+/** Updates the prominent posture state heading. */
 function setTitle(message: string): void {
 	monitorTitle.textContent = message;
 }
 
+/** Matches the drawing canvas pixels to the active camera frame dimensions. */
 function resizeOverlay(): void {
 	landmarkCanvas.width = camera.videoWidth;
 	landmarkCanvas.height = camera.videoHeight;
 }
 
+/**
+ * Converts a normalized model x-coordinate into the mirrored camera preview's
+ * canvas x-coordinate.
+ */
 function mirroredX(x: number): number {
 	return landmarkCanvas.width - (x * landmarkCanvas.width);
 }
 
+/** Converts a normalized model y-coordinate into a canvas y-coordinate. */
 function canvasY(y: number): number {
 	return y * landmarkCanvas.height;
 }
 
+/**
+ * Draws a group of indexed landmark connections using one canvas path.
+ * Missing landmarks are skipped so partial tracking does not break the overlay.
+ */
 function drawConnections(
 	landmarks: FacialLandmark[],
 	connections: LandmarkConnection[],
@@ -127,6 +157,10 @@ function drawConnections(
 	canvasContext.stroke();
 }
 
+/**
+ * Clears and redraws the optional facial mesh overlay for the most recent
+ * analysis result.
+ */
 function drawFace(landmarks: FacialLandmark[] | undefined): void {
 	if (!canvasContext) return;
 
@@ -142,6 +176,10 @@ function drawFace(landmarks: FacialLandmark[] | undefined): void {
 	drawConnections(landmarks, FaceLandmarker.FACE_LANDMARKS_RIGHT_EYEBROW, '#6de378', 2);
 }
 
+/**
+ * Derives camera-relative facial measurements used to compare the live posture
+ * with the saved calibration. Returns undefined when required landmarks are absent.
+ */
 function measurePosture(landmarks: FacialLandmark[]): PostureMeasurement | undefined {
 	const leftCheek = landmarks[234];
 	const rightCheek = landmarks[454];
@@ -161,6 +199,7 @@ function measurePosture(landmarks: FacialLandmark[]): PostureMeasurement | undef
 	};
 }
 
+/** Averages accepted calibration samples into one saved baseline. */
 function meanMeasurement(measurements: PostureMeasurement[]): PostureBaseline {
 	const total = measurements.reduce(
 		(sum, measurement) => ({
@@ -179,6 +218,10 @@ function meanMeasurement(measurements: PostureMeasurement[]): PostureBaseline {
 	};
 }
 
+/**
+ * Rejects calibration samples that differ too much from the first sample.
+ * This prevents saving a reference posture while the person is moving.
+ */
 function measurementIsStable(measurement: PostureMeasurement): boolean {
 	const firstMeasurement = calibrationMeasurements[0];
 	if (!firstMeasurement) return true;
@@ -187,6 +230,10 @@ function measurementIsStable(measurement: PostureMeasurement): boolean {
 	return scaleChange < 0.06 && verticalChange < 0.03;
 }
 
+/**
+ * Returns the strongest posture shift from the calibrated reference, or
+ * undefined when the live posture remains within the accepted range.
+ */
 function findPostureDirection(measurement: PostureMeasurement, reference: PostureBaseline): PostureDirection | undefined {
 	const scaleChange = measurement.faceScale / reference.faceScale - 1;
 	const horizontalShift = measurement.faceX - reference.faceX;
@@ -203,23 +250,30 @@ function findPostureDirection(measurement: PostureMeasurement, reference: Postur
 	return horizontalShift > 0 ? 'left' : 'right';
 }
 
+/** Returns the short, visible heading for a detected posture direction. */
 function directionLabel(direction: PostureDirection): string {
 	return `Lean ${direction}`;
 }
 
+/** Returns the shared explanatory text used below a directional heading. */
 function directionDescription(_direction: PostureDirection): string {
 	return 'Your posture is away from the calibrated position.';
 }
 
+/** Shows or hides the short calibration progress message. */
 function showCalibrationProgress(message: string | undefined): void {
 	calibrationDisplay.hidden = !message;
 	calibrationDisplay.textContent = message ?? '';
 }
 
+/** Reports whether a valid calibration is saved in the current browser. */
 function updateReferenceDisplay(): void {
 	referenceDisplay.textContent = baseline ? 'Saved on this device' : 'Not calibrated';
 }
 
+/**
+ * Saves the accepted samples locally and enters active monitoring mode.
+ */
 function finishCalibration(): void {
 	baseline = meanMeasurement(calibrationMeasurements);
 	localStorage.setItem(BASELINE_STORAGE_KEY, JSON.stringify(baseline));
@@ -235,6 +289,10 @@ function finishCalibration(): void {
 	setStatus('Monitoring gently. A reminder appears only after 30 seconds away from your calibrated posture.');
 }
 
+/**
+ * Starts a new three-second calibration after confirming that a face is
+ * currently being tracked.
+ */
 function beginCalibration(): void {
 	if (!latestMeasurement) {
 		setStatus('Move your face into the camera frame before calibrating.');
@@ -252,6 +310,7 @@ function beginCalibration(): void {
 	showCalibrationProgress('Preparing calibration…');
 }
 
+/** Toggles active monitoring without stopping the camera or landmark overlay. */
 function pauseMonitoring(): void {
 	if (mode === 'paused') {
 		mode = 'monitoring';
@@ -268,6 +327,10 @@ function pauseMonitoring(): void {
 	}
 }
 
+/**
+ * Sends the optional desktop notification for a sustained posture warning.
+ * The in-page warning remains available if notifications are unsupported.
+ */
 function notifyUser(direction: PostureDirection): void {
 	if (notificationToggle.checked && 'Notification' in window && Notification.permission === 'granted') {
 		new Notification(directionLabel(direction), {
@@ -278,6 +341,10 @@ function notifyUser(direction: PostureDirection): void {
 	}
 }
 
+/**
+ * Enters warning mode, starts the reminder cooldown, and presents the current
+ * directional reminder both in the page and, if enabled, as a notification.
+ */
 function showReminder(now: number, direction: PostureDirection): void {
 	mode = 'warning';
 	reminderCooldownUntil = now + REMINDER_COOLDOWN_MS;
@@ -289,6 +356,7 @@ function showReminder(now: number, direction: PostureDirection): void {
 	notifyUser(direction);
 }
 
+/** Clears the current warning after the person confirms an adjustment. */
 function acknowledgeReminder(): void {
 	mode = 'monitoring';
 	badPostureSince = 0;
@@ -297,6 +365,7 @@ function acknowledgeReminder(): void {
 	setStatus('Thanks. Monitoring will continue quietly.');
 }
 
+/** Temporarily suppresses new posture reminders for ten minutes. */
 function snoozeReminders(): void {
 	mode = 'snoozed';
 	snoozedUntil = performance.now() + SNOOZE_DURATION_MS;
@@ -306,6 +375,12 @@ function snoozeReminders(): void {
 	setStatus('Posture reminders are snoozed for 10 minutes.');
 }
 
+/**
+ * Advances monitoring state from one live measurement.
+ *
+ * A posture direction must remain outside the calibrated range for the full
+ * warning delay before a reminder appears.
+ */
 function updateMonitoring(measurement: PostureMeasurement, now: number): void {
 	if (!baseline || mode === 'ready' || mode === 'calibrating' || mode === 'paused') return;
 
@@ -348,6 +423,10 @@ function updateMonitoring(measurement: PostureMeasurement, now: number): void {
 	}
 }
 
+/**
+ * Collects stable samples during calibration and completes calibration when
+ * the required duration and sample count have been reached.
+ */
 function updateCalibration(measurement: PostureMeasurement, now: number): void {
 	if (mode !== 'calibrating') return;
 	if (!measurementIsStable(measurement)) {
@@ -365,6 +444,10 @@ function updateCalibration(measurement: PostureMeasurement, now: number): void {
 	}
 }
 
+/**
+ * Handles missing tracking, converts valid landmarks into a posture
+ * measurement, and sends that measurement to calibration and monitoring.
+ */
 function processLandmarks(landmarks: FacialLandmark[] | undefined, now: number): void {
 	trackingDisplay.textContent = landmarks ? `${landmarks.length} facial landmarks` : 'no face';
 	if (!landmarks) {
@@ -386,6 +469,10 @@ function processLandmarks(landmarks: FacialLandmark[] | undefined, now: number):
 	updateMonitoring(measurement, now);
 }
 
+/**
+ * Runs Face Landmarker at the configured rate, then updates the overlay,
+ * calibration state, and posture reminder state from the latest camera frame.
+ */
 async function trackFace(): Promise<void> {
 	if (!faceLandmarker || camera.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
 		requestAnimationFrame(() => void trackFace());
@@ -408,12 +495,17 @@ async function trackFace(): Promise<void> {
 	requestAnimationFrame(() => void trackFace());
 }
 
+/** Enables the notification control only in browsers that expose the API. */
 function configureNotifications(): void {
 	if (!('Notification' in window)) return;
 	notificationToggle.disabled = false;
 	notificationToggle.checked = Notification.permission === 'granted';
 }
 
+/**
+ * Requests notification permission only after the person enables the control.
+ * A denial leaves the normal in-page reminder active.
+ */
 async function setBrowserNotifications(): Promise<void> {
 	if (!notificationToggle.checked || !('Notification' in window)) return;
 	const permission = await Notification.requestPermission();
@@ -423,6 +515,10 @@ async function setBrowserNotifications(): Promise<void> {
 	}
 }
 
+/**
+ * Requests webcam access, loads Face Landmarker, restores any saved baseline,
+ * and begins the recurring analysis loop.
+ */
 async function startCamera(): Promise<void> {
 	cameraButton.disabled = true;
 	setStatus('Requesting camera access…');

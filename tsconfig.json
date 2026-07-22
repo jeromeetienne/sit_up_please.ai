@@ -11,5 +11,5 @@
     "noEmit": true,
     "strict": true
   },
-  "include": ["web/js"]
+  "include": ["web"]
 }
