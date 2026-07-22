@@ -54,6 +54,3 @@ assessment. Face Landmarker does not measure shoulder position, torso position,
 or spinal curvature. Tracking quality depends on camera position, lighting, and
 whether the face is visible.
 
-## Project issue
-
-Implementation work is tracked in [issue #5](https://github.com/jeromeetienne/sit_up_please.ai/issues/5).
