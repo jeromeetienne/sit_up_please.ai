@@ -5,7 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f3f2f2" />
     <title>Sit Up, Please</title>
-    <script type="module" crossorigin src="/sit_up_please.ai/assets/index-86EAScOM.js"></script>
+
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Sit Up, Please" />
+    <script type="module" crossorigin src="/sit_up_please.ai/assets/index-CegP2xJq.js"></script>
     <link rel="stylesheet" crossorigin href="/sit_up_please.ai/assets/index--N7kdTNh.css">
   </head>
   <body>
@@ -108,6 +116,10 @@
           </span>
         </span>
         <div class="footer-actions">
+          <button id="install-app" class="ghost-button" type="button" hidden>
+            <i class="bi bi-download" aria-hidden="true"></i>
+            <span>Install app</span>
+          </button>
           <button id="toggle-landmarks" class="ghost-button" type="button">
             <i class="bi bi-eye" id="toggle-landmarks-icon" aria-hidden="true"></i>
             <span id="toggle-landmarks-label">Landmarks: on</span>
