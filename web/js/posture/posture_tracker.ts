@@ -1,5 +1,5 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import type { CameraState, FacialLandmark, LandmarkConnection, PostureBaseline, PostureDirection, PostureMeasurement, PostureReading } from './monitor_types';
+import type { CameraState, FacialLandmark, LandmarkConnection, PostureBaseline, PostureDirection, PostureMeasurement, PostureReading } from '../monitor/monitor_types';
 import { PostureReference } from './posture_reference';
 
 ///////////////////////////////////////////////////////////////////////////////

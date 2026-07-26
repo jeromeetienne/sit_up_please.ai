@@ -3,12 +3,12 @@ import '@fontsource-variable/source-serif-4/wght-italic.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import '../css/style.css';
 
-import { InstallPrompt } from './install_prompt';
-import { MonitorSession } from './monitor_session';
-import { MonitorView } from './monitor_view';
-import { NotificationAlerts } from './notification_alerts';
-import { OfflineSupport } from './offline_support';
-import { PostureTracker } from './posture_tracker';
+import { InstallPrompt } from './pwa/install_prompt';
+import { MonitorSession } from './monitor/monitor_session';
+import { MonitorView } from './monitor/monitor_view';
+import { NotificationAlerts } from './notifications/notification_alerts';
+import { OfflineSupport } from './pwa/offline_support';
+import { PostureTracker } from './posture/posture_tracker';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////

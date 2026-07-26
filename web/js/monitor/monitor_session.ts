@@ -1,7 +1,7 @@
 import type { CameraState, MonitorPhase, MonitorViewModel, PostureAlertContent, PostureDirection, PostureState, SessionBar, StateColour } from './monitor_types';
 import { MonitorCopy } from './monitor_copy';
-import { PostureReference } from './posture_reference';
-import { PostureTracker } from './posture_tracker';
+import { PostureReference } from '../posture/posture_reference';
+import { PostureTracker } from '../posture/posture_tracker';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
