@@ -1,4 +1,4 @@
-import type { PostureDirection, SlipContent } from './monitor_types';
+import type { PostureAlertContent, PostureDirection } from './monitor_types';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,10 +20,10 @@ export class MonitorCopy {
 
 	/** The headline word for each direction the posture can drift in. */
 	static readonly BAD_VERDICTS: Record<PostureDirection, string> = {
-		forward: 'Leaning in.',
+		forward: 'Leaning forward.',
+		backward: 'Leaning back.',
 		left: 'Leaning left.',
 		right: 'Leaning right.',
-		down: 'Slumping.',
 	};
 
 	/** Rotating correction lines for each direction the posture can drift in. */
@@ -31,6 +31,10 @@ export class MonitorCopy {
 		forward: [
 			'Your head has drifted forward. Slide back into the chair and let the screen come to you.',
 			'You are leaning in. Push the hips back, drop the shoulders, unclench the jaw.',
+		],
+		backward: [
+			'You have drifted back from where you calibrated. Come back into range.',
+			'You are further from the screen than your reference. Settle back into the position you started from.',
 		],
 		left: [
 			'You have drifted toward your left. Bring your shoulders back level over your hips.',
@@ -40,18 +44,13 @@ export class MonitorCopy {
 			'You have drifted toward your right. Bring your shoulders back level over your hips.',
 			'Your weight has shifted right. Centre yourself in the chair.',
 		],
-		down: [
-			'The chin is dipping. Lift the sternum an inch and the rest follows.',
-			'You are sinking in the seat. Draw yourself back up against the backrest.',
-		],
 	};
 
-	/** The reminders shown in the "stop press" slip, chosen in turn. */
-	static readonly SLIP_NOTES: SlipContent[] = [
-		{ title: 'Chin back.', body: 'Ten seconds of forward head. Ease the skull over the shoulders and breathe out.' },
-		{ title: 'Shoulders down.', body: 'They have crept toward your ears again. Let them fall on the exhale.' },
-		{ title: 'Sit back.', body: 'You have inched to the front of the seat. Find the backrest.' },
-	];
+	/**
+	 * The desktop notification body, every time, for every direction —
+	 * deliberately plain rather than another rotating set of phrasings.
+	 */
+	static readonly ALERT_BODY = 'Please sit up.';
 
 	/** How many session seconds pass before the upright guidance line changes. */
 	static readonly GOOD_LINE_INTERVAL_SEC = 47;
@@ -88,8 +87,12 @@ export class MonitorCopy {
 		return lines[slipCount % lines.length];
 	}
 
-	/** Returns the slip reminder for the number of slips seen so far. */
-	static slipNote(slipCount: number): SlipContent {
-		return MonitorCopy.SLIP_NOTES[slipCount % MonitorCopy.SLIP_NOTES.length];
+	/**
+	 * Returns the desktop notification content for a direction: the same word
+	 * as the headline, so the notification can never describe a different
+	 * drift than what the page is currently showing.
+	 */
+	static alertContent(direction: PostureDirection): PostureAlertContent {
+		return { title: MonitorCopy.badVerdict(direction), body: MonitorCopy.ALERT_BODY };
 	}
 }

@@ -25,7 +25,7 @@ export type PostureBaseline = PostureMeasurement;
 export type CameraState = 'off' | 'on' | 'denied';
 
 /** Which way the person has moved away from the calibrated reference posture. */
-export type PostureDirection = 'forward' | 'left' | 'right' | 'down';
+export type PostureDirection = 'forward' | 'backward' | 'left' | 'right';
 
 /** One posture reading taken from the camera. */
 export type PostureReading = {
@@ -52,8 +52,8 @@ export type StateColour = 'unknown' | 'good' | 'bad';
 /** One bar of the session ribbon, covering two seconds of the session. */
 export type SessionBar = { isBad: boolean; heightPx: number };
 
-/** The reminder shown in the "stop press" slip and in the desktop alert. */
-export type SlipContent = { title: string; body: string };
+/** The title and body of the desktop notification fired for a sustained bad posture. */
+export type PostureAlertContent = { title: string; body: string };
 
 /** Everything the interface needs in order to draw the page once. */
 export type MonitorViewModel = {
@@ -78,6 +78,5 @@ export type MonitorViewModel = {
 	bestRunText: string;
 	sessionElapsedText: string;
 	bars: SessionBar[];
-	slip: SlipContent | undefined;
 	monitoringToggleLabel: string;
 };

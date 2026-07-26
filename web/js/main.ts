@@ -36,17 +36,19 @@ class Main {
 		const tracker = new PostureTracker(video, landmarkCanvas, drawsLandmarks);
 		const session = new MonitorSession(tracker, {
 			onUpdate: (viewModel) => view.render(viewModel),
-			onSlipShown: (slip) => alerts.show(slip),
-			onSlipCleared: () => alerts.clear(),
+			onAlertRaised: (content) => alerts.show(content),
+			onAlertCleared: () => alerts.clear(),
 		});
 
 		view.bindActions({
 			onStart: () => {
 				alerts.prepareAudio();
+				void alerts.requestOnFirstStart().then((isEnabled) => view.setAlertsState(alerts.isSupported, isEnabled));
 				session.beginCalibration();
 			},
 			onRecalibrate: () => {
 				alerts.prepareAudio();
+				void alerts.requestOnFirstStart().then((isEnabled) => view.setAlertsState(alerts.isSupported, isEnabled));
 				session.beginCalibration();
 			},
 			onToggleMonitoring: () => session.toggleMonitoring(),
@@ -60,7 +62,6 @@ class Main {
 				tracker.setDrawsLandmarks(drawsLandmarks);
 				view.setLandmarksState(drawsLandmarks);
 			},
-			onDismissSlip: () => session.dismissSlip(),
 		});
 
 		view.setAlertsState(alerts.isSupported, alerts.isEnabled);

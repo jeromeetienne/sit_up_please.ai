@@ -43,11 +43,6 @@ button {
 	50% { opacity: 0.15; }
 }
 
-@keyframes bs-slip {
-	from { opacity: 0; transform: translateY(14px) rotate(-0.6deg); }
-	to { opacity: 1; transform: translateY(0) rotate(-0.6deg); }
-}
-
 /*///////////////////////////////////////////////////////////////////////////*/
 /*	Page frame and masthead                                                   */
 /*///////////////////////////////////////////////////////////////////////////*/
@@ -76,6 +71,7 @@ button {
 	align-items: baseline;
 	justify-content: space-between;
 	gap: 24px;
+	margin-bottom: var(--gap);
 }
 
 .wordmark {
@@ -95,21 +91,6 @@ button {
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 	color: var(--color-neutral-700);
-}
-
-.rule-thick {
-	flex: none;
-	height: 3px;
-	margin-top: 9px;
-	background: var(--color-text);
-}
-
-.rule-thin {
-	flex: none;
-	height: 1px;
-	margin-top: 3px;
-	margin-bottom: var(--gap);
-	background: var(--color-text);
 }
 
 .main-grid {
@@ -330,12 +311,17 @@ button {
 
 /*
  * The headline size follows the width of the page, but never grows past what
- * the column can hold: the longest word, "Slouching.", must stay on one line
- * rather than break after its full stop.
+ * the column can hold. Verdict words range from one word ("Ready.") to three
+ * ("Looking for you."), which wrap to a different number of lines — without a
+ * reserved height, the page's content below would jump up or down every time
+ * the verdict changes, several times a second while monitoring. Reserving
+ * two lines' worth of height always (in em, so it tracks the responsive font
+ * size) keeps that content at a constant position regardless of word count.
  */
 .verdict {
 	margin: 0;
 	min-width: 0;
+	min-height: 1.88em;
 	font-family: var(--font-heading);
 	font-weight: var(--font-heading-weight);
 	font-size: clamp(40px, min(5.2vw, 15.5cqw), 78px);
@@ -376,6 +362,9 @@ button {
 }
 
 .primary-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
 	padding: 15px 30px;
 	border: none;
 	border-radius: var(--radius-md);
@@ -386,6 +375,10 @@ button {
 	color: #fff;
 	cursor: pointer;
 	transition: background 0.18s;
+}
+
+.primary-button i {
+	font-size: 0.85em;
 }
 
 .primary-button:hover {
@@ -456,6 +449,10 @@ button {
  * height constant across phases instead.
  */
 .session-ribbon[hidden] {
+	/* The browser's own [hidden] rule sets display:none; display and
+	   visibility are resolved independently, so visibility alone here would
+	   never win the cascade against it. display must be overridden too. */
+	display: block;
 	visibility: hidden;
 }
 
@@ -551,6 +548,9 @@ button {
 }
 
 .ghost-button {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
 	padding: 8px 14px;
 	border: 1px solid var(--color-divider);
 	border-radius: var(--radius-md);
@@ -559,6 +559,10 @@ button {
 	font-size: 13px;
 	color: var(--color-neutral-700);
 	cursor: pointer;
+}
+
+.ghost-button i {
+	font-size: 1.05em;
 }
 
 .ghost-button:hover {
@@ -577,56 +581,6 @@ button {
 }
 
 /*///////////////////////////////////////////////////////////////////////////*/
-/*	The "stop press" slip                                                     */
-/*///////////////////////////////////////////////////////////////////////////*/
-
-.slip {
-	position: fixed;
-	right: 32px;
-	bottom: 32px;
-	z-index: 20;
-	width: 322px;
-	padding: 20px 22px 18px;
-	border-radius: var(--radius-md);
-	background: var(--color-bg);
-	box-shadow: var(--shadow-lg);
-	animation: bs-slip 0.3s ease both;
-}
-
-.slip[hidden] {
-	display: none;
-}
-
-.slip-edge {
-	height: 5px;
-	margin: -20px -22px 15px;
-	border-radius: var(--radius-md) var(--radius-md) 0 0;
-	background: var(--state);
-}
-
-.slip-kicker {
-	margin: 0 0 5px;
-	font-size: 11px;
-	letter-spacing: 0.14em;
-	text-transform: uppercase;
-	color: var(--state);
-}
-
-.slip-title {
-	margin: 0 0 7px;
-	font-family: var(--font-heading);
-	font-weight: var(--font-heading-weight);
-	font-size: 27px;
-	line-height: 1.05;
-}
-
-.slip-body {
-	margin: 0 0 14px;
-	font-size: 15px;
-	color: var(--color-neutral-800);
-}
-
-/*///////////////////////////////////////////////////////////////////////////*/
 /*	Responsive and reduced motion                                             */
 /*///////////////////////////////////////////////////////////////////////////*/
 
@@ -639,7 +593,7 @@ button {
  */
 @media (max-width: 1099px) {
 	:root {
-		--pad: 28px;
+		--pad: 16px;
 		--gap: 26px;
 	}
 
@@ -676,26 +630,10 @@ button {
 		flex-wrap: wrap;
 		opacity: 1;
 	}
-
-	.slip {
-		right: 16px;
-		bottom: 16px;
-		width: min(322px, calc(100vw - 32px));
-	}
 }
 
 @media (prefers-reduced-motion: reduce) {
 	.live-dot {
 		animation: none;
-	}
-
-	.head-ring,
-	.shoulder-bar {
-		transition: border-color 0.5s ease, background 0.5s ease;
-	}
-
-	.slip {
-		animation: none;
-		transform: rotate(-0.6deg);
 	}
 }

@@ -33,9 +33,6 @@ export class PostureReference {
 	/** How far the face may move sideways before the reading reaches the threshold. */
 	private static readonly _HORIZONTAL_TOLERANCE = 0.07;
 
-	/** How far the face may sink before the reading reaches the threshold. */
-	private static readonly _VERTICAL_TOLERANCE = 0.06;
-
 	/**
 	 * Reads and validates the saved reference posture from local browser storage.
 	 * Older or malformed data is ignored so a new calibration can replace it.
@@ -98,32 +95,29 @@ export class PostureReference {
 	 * Scores a live measurement against the reference posture and names which
 	 * direction is most responsible for it.
 	 *
-	 * The three differences the front camera can see — the face growing larger
-	 * because the head has come forward, the face moving sideways, and the face
-	 * sinking down the frame — are each divided by their own tolerance, and the
-	 * strongest one decides both the returned lean value and its direction. The
-	 * lean value is scaled so that reaching a tolerance produces exactly
-	 * `BAD_LEAN_THRESHOLD`.
+	 * The two differences the front camera can see — the face changing size
+	 * because the head has moved forward or back, and the face moving sideways
+	 * — are each divided by their own tolerance, and the larger one decides
+	 * both the returned lean value and its direction. The lean value is scaled
+	 * so that reaching a tolerance produces exactly `BAD_LEAN_THRESHOLD`.
 	 */
 	static evaluate(measurement: PostureMeasurement, reference: PostureBaseline): { lean: number; direction: PostureDirection } {
-		const forwardShare = (measurement.faceScale / reference.faceScale - 1) / PostureReference._FACE_SCALE_TOLERANCE;
+		const scaleChange = measurement.faceScale / reference.faceScale - 1;
+		const scaleSeverity = Math.abs(scaleChange) / PostureReference._FACE_SCALE_TOLERANCE;
 		const horizontalShift = measurement.faceX - reference.faceX;
-		const horizontalShare = Math.abs(horizontalShift) / PostureReference._HORIZONTAL_TOLERANCE;
-		const verticalShare = (measurement.faceY - reference.faceY) / PostureReference._VERTICAL_TOLERANCE;
+		const horizontalSeverity = Math.abs(horizontalShift) / PostureReference._HORIZONTAL_TOLERANCE;
 
-		const strongestShare = Math.max(forwardShare, horizontalShare, verticalShare);
+		const strongestSeverity = Math.max(scaleSeverity, horizontalSeverity);
 		const lean = Math.max(
 			PostureReference.MIN_LEAN,
-			Math.min(PostureReference.MAX_LEAN, strongestShare * PostureReference.BAD_LEAN_THRESHOLD),
+			Math.min(PostureReference.MAX_LEAN, strongestSeverity * PostureReference.BAD_LEAN_THRESHOLD),
 		);
 
-		let direction: PostureDirection = 'forward';
-		if (strongestShare === verticalShare) direction = 'down';
-		else if (strongestShare === horizontalShare) {
+		const direction: PostureDirection = scaleSeverity >= horizontalSeverity
+			? (scaleChange > 0 ? 'forward' : 'backward')
 			// The camera preview is mirrored, so an increasing source x-coordinate
 			// is movement toward the person's left in the preview.
-			direction = horizontalShift > 0 ? 'left' : 'right';
-		}
+			: (horizontalShift > 0 ? 'left' : 'right');
 
 		return { lean, direction };
 	}

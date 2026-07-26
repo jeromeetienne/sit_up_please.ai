@@ -1,4 +1,4 @@
-import type { CameraState, MonitorPhase, MonitorViewModel, PostureDirection, PostureState, SessionBar, SlipContent, StateColour } from './monitor_types';
+import type { CameraState, MonitorPhase, MonitorViewModel, PostureAlertContent, PostureDirection, PostureState, SessionBar, StateColour } from './monitor_types';
 import { MonitorCopy } from './monitor_copy';
 import { PostureReference } from './posture_reference';
 import { PostureTracker } from './posture_tracker';
@@ -13,8 +13,7 @@ const TICK_INTERVAL_MS = 500;
 const TICK_SECONDS = TICK_INTERVAL_MS / 1_000;
 const CALIBRATION_STEP_MS = 900;
 const CALIBRATION_START_COUNT = 3;
-const SLIP_DELAY_SEC = 5;
-const SLIP_SUPPRESSION_SEC = 25;
+const ALERT_DELAY_SEC = 5;
 const RIBBON_BAR_SECONDS = 2;
 const RIBBON_BAR_LIMIT = 72;
 const RIBBON_BAR_MIN_HEIGHT_PX = 14;
@@ -23,8 +22,8 @@ const RIBBON_BAR_RANGE_PX = 36;
 /** What the session tells the rest of the application when something changes. */
 export type MonitorSessionCallbacks = {
 	onUpdate: (viewModel: MonitorViewModel) => void;
-	onSlipShown: (slip: SlipContent) => void;
-	onSlipCleared: () => void;
+	onAlertRaised: (content: PostureAlertContent) => void;
+	onAlertCleared: () => void;
 };
 
 /**
@@ -50,7 +49,7 @@ export class MonitorSession {
 	private _bestRunSec = 0;
 	private _slipCount = 0;
 	private _bars: SessionBar[] = [];
-	private _slip: SlipContent | undefined;
+	private _isAlertActive = false;
 	private _secondsSinceLastBar = 0;
 	private _calibrationRun = 0;
 	private _tickTimer: number | undefined;
@@ -81,7 +80,7 @@ export class MonitorSession {
 		this._phase = 'calibrating';
 		this._isPaused = false;
 		this._calibrationCount = CALIBRATION_START_COUNT;
-		this._clearSlip();
+		this._clearAlert();
 		this.publish();
 
 		void this._tracker.start().then(() => {
@@ -112,14 +111,7 @@ export class MonitorSession {
 			return;
 		}
 		this._isPaused = true;
-		this._clearSlip();
-		this.publish();
-	}
-
-	/** Dismisses the slip and holds it back for the next stretch of slouching. */
-	dismissSlip(): void {
-		this._badRunSec = -SLIP_SUPPRESSION_SEC;
-		this._clearSlip();
+		this._clearAlert();
 		this.publish();
 	}
 
@@ -150,7 +142,7 @@ export class MonitorSession {
 		this._slipCount = 0;
 		this._bars = [];
 		this._secondsSinceLastBar = 0;
-		this._clearSlip();
+		this._clearAlert();
 
 		window.clearInterval(this._tickTimer);
 		this._tickTimer = window.setInterval(() => this._tick(), TICK_INTERVAL_MS);
@@ -172,7 +164,7 @@ export class MonitorSession {
 		this._direction = reading.direction;
 		this._isReadingAvailable = reading.isFaceVisible;
 		if (reading.isFaceVisible === false) {
-			this._clearSlip();
+			this._clearAlert();
 			this.publish();
 			return;
 		}
@@ -191,29 +183,29 @@ export class MonitorSession {
 		}
 		this._posture = isBad ? 'bad' : 'good';
 
-		this._updateSlip(isBad);
+		this._updateAlert(isBad);
 		this._appendRibbonBar(isBad, reading.lean);
 		this.publish();
 	}
 
-	/** Shows the slip after a sustained slouch and takes it away on correction. */
-	private _updateSlip(isBad: boolean): void {
+	/** Raises the desktop alert after a sustained slouch and clears it on correction. */
+	private _updateAlert(isBad: boolean): void {
 		if (isBad === false) {
-			this._clearSlip();
+			this._clearAlert();
 			return;
 		}
-		if (this._slip !== undefined) return;
-		if (this._badRunSec < SLIP_DELAY_SEC) return;
+		if (this._isAlertActive) return;
+		if (this._badRunSec < ALERT_DELAY_SEC) return;
 
-		this._slip = MonitorCopy.slipNote(this._slipCount);
-		this._callbacks.onSlipShown(this._slip);
+		this._isAlertActive = true;
+		this._callbacks.onAlertRaised(MonitorCopy.alertContent(this._direction));
 	}
 
-	/** Takes the slip off the screen and closes any desktop alert with it. */
-	private _clearSlip(): void {
-		if (this._slip === undefined) return;
-		this._slip = undefined;
-		this._callbacks.onSlipCleared();
+	/** Closes the desktop alert once the posture is corrected. */
+	private _clearAlert(): void {
+		if (this._isAlertActive === false) return;
+		this._isAlertActive = false;
+		this._callbacks.onAlertCleared();
 	}
 
 	/** Adds one ribbon bar for every two seconds of the session. */
@@ -309,7 +301,6 @@ export class MonitorSession {
 			bestRunText: MonitorCopy.formatDuration(this._bestRunSec),
 			sessionElapsedText: MonitorCopy.formatDuration(this._sessionSec),
 			bars: this._bars,
-			slip: this._isPaused ? undefined : this._slip,
 			monitoringToggleLabel: MonitorSession._toggleLabel(isIdle, this._isPaused),
 		};
 	}

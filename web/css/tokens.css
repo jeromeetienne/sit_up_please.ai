@@ -58,7 +58,7 @@
 	--state-unknown-deep: var(--color-neutral-800);
 
 	/* Page layout tokens. */
-	--pad: 44px;
+	--pad: 20px;
 	--gap: 44px;
 
 	/*

@@ -17,7 +17,6 @@ export type MonitorActions = {
 	onToggleMonitoring: () => void;
 	onToggleAlerts: () => void;
 	onToggleLandmarks: () => void;
-	onDismissSlip: () => void;
 };
 
 /**
@@ -51,12 +50,15 @@ export class MonitorView {
 	private readonly _sessionElapsed = MonitorView._require<HTMLElement>('session-elapsed');
 	private readonly _ribbonBars = MonitorView._require<HTMLElement>('ribbon-bars');
 	private readonly _landmarksButton = MonitorView._require<HTMLButtonElement>('toggle-landmarks');
+	private readonly _landmarksIcon = MonitorView._require<HTMLElement>('toggle-landmarks-icon');
+	private readonly _landmarksLabel = MonitorView._require<HTMLElement>('toggle-landmarks-label');
 	private readonly _alertsButton = MonitorView._require<HTMLButtonElement>('toggle-alerts');
+	private readonly _alertsIcon = MonitorView._require<HTMLElement>('toggle-alerts-icon');
+	private readonly _alertsLabel = MonitorView._require<HTMLElement>('toggle-alerts-label');
 	private readonly _recalibrateButton = MonitorView._require<HTMLButtonElement>('recalibrate');
 	private readonly _monitoringButton = MonitorView._require<HTMLButtonElement>('toggle-monitoring');
-	private readonly _slip = MonitorView._require<HTMLElement>('slip');
-	private readonly _slipTitle = MonitorView._require<HTMLElement>('slip-title');
-	private readonly _slipBody = MonitorView._require<HTMLElement>('slip-body');
+	private readonly _monitoringIcon = MonitorView._require<HTMLElement>('toggle-monitoring-icon');
+	private readonly _monitoringLabel = MonitorView._require<HTMLElement>('toggle-monitoring-label');
 	private readonly _announcement = MonitorView._require<HTMLElement>('live-announcement');
 
 	private _renderedBars: SessionBar[] | undefined;
@@ -74,18 +76,19 @@ export class MonitorView {
 		this._monitoringButton.addEventListener('click', actions.onToggleMonitoring);
 		this._alertsButton.addEventListener('click', actions.onToggleAlerts);
 		this._landmarksButton.addEventListener('click', actions.onToggleLandmarks);
-		MonitorView._require<HTMLButtonElement>('dismiss-slip').addEventListener('click', actions.onDismissSlip);
 	}
 
 	/** Turns the desktop alert button on, and labels its current setting. */
 	setAlertsState(isSupported: boolean, isEnabled: boolean): void {
 		this._alertsButton.disabled = isSupported === false;
-		this._alertsButton.textContent = isEnabled ? 'Desktop alerts: on' : 'Desktop alerts: off';
+		this._alertsIcon.className = isEnabled ? 'bi bi-bell' : 'bi bi-bell-slash';
+		this._alertsLabel.textContent = isEnabled ? 'Desktop alerts: on' : 'Desktop alerts: off';
 	}
 
 	/** Labels the landmark-overlay button with its current setting. */
 	setLandmarksState(isEnabled: boolean): void {
-		this._landmarksButton.textContent = isEnabled ? 'Landmarks: on' : 'Landmarks: off';
+		this._landmarksIcon.className = isEnabled ? 'bi bi-eye' : 'bi bi-eye-slash';
+		this._landmarksLabel.textContent = isEnabled ? 'Landmarks: on' : 'Landmarks: off';
 	}
 
 	/** Draws the whole screen from one set of values. */
@@ -118,8 +121,8 @@ export class MonitorView {
 		this._sessionElapsed.textContent = viewModel.sessionElapsedText;
 		this._renderRibbon(viewModel.bars);
 
-		this._monitoringButton.textContent = viewModel.monitoringToggleLabel;
-		this._renderSlip(viewModel);
+		this._monitoringIcon.className = viewModel.monitoringToggleLabel === 'Pause' ? 'bi bi-pause-fill' : 'bi bi-play-fill';
+		this._monitoringLabel.textContent = viewModel.monitoringToggleLabel;
 		this._announce(viewModel);
 	}
 
@@ -149,20 +152,6 @@ export class MonitorView {
 			fragment.append(element);
 		}
 		this._ribbonBars.replaceChildren(fragment);
-	}
-
-	/** Shows or hides the "stop press" slip in the corner of the page. */
-	private _renderSlip(viewModel: MonitorViewModel): void {
-		const slip = viewModel.slip;
-		if (slip === undefined) {
-			this._slip.hidden = true;
-			return;
-		}
-		if (this._slipTitle.textContent !== slip.title) {
-			this._slipTitle.textContent = slip.title;
-			this._slipBody.textContent = slip.body;
-		}
-		this._slip.hidden = false;
 	}
 
 	/** Reads the verdict out to assistive technology when the verdict changes. */

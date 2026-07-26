@@ -16,8 +16,6 @@
           <span id="dateline"></span>
         </div>
       </header>
-      <div class="rule-thick"></div>
-      <div class="rule-thin"></div>
 
       <main class="main-grid">
         <section class="video-column" aria-label="Camera">
@@ -64,7 +62,10 @@
           <p class="verdict-meta" id="verdict-meta">Nothing has been watched yet.</p>
 
           <div class="start-block" id="start-block">
-            <button id="start-monitoring" class="primary-button" type="button">Start watching my back</button>
+            <button id="start-monitoring" class="primary-button" type="button">
+              <i class="bi bi-camera-video" aria-hidden="true"></i>
+              <span>Start watching my back</span>
+            </button>
             <span class="start-note">Takes three seconds to calibrate.</span>
           </div>
 
@@ -105,21 +106,23 @@
           </span>
         </span>
         <div class="footer-actions">
-          <button id="toggle-landmarks" class="ghost-button" type="button">Landmarks: on</button>
-          <button id="toggle-alerts" class="ghost-button" type="button" disabled>Desktop alerts: off</button>
-          <button id="recalibrate" class="ghost-button" type="button">Recalibrate</button>
-          <button id="toggle-monitoring" class="ghost-button" type="button">Start</button>
+          <button id="toggle-landmarks" class="ghost-button" type="button">
+            <i class="bi bi-eye" id="toggle-landmarks-icon" aria-hidden="true"></i>
+            <span id="toggle-landmarks-label">Landmarks: on</span>
+          </button>
+          <button id="toggle-alerts" class="ghost-button" type="button" disabled>
+            <i class="bi bi-bell" id="toggle-alerts-icon" aria-hidden="true"></i>
+            <span id="toggle-alerts-label">Desktop alerts: off</span>
+          </button>
+          <button id="recalibrate" class="ghost-button" type="button">
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+            <span>Recalibrate</span>
+          </button>
+          <button id="toggle-monitoring" class="ghost-button" type="button">
+            <i class="bi bi-play-fill" id="toggle-monitoring-icon" aria-hidden="true"></i>
+            <span id="toggle-monitoring-label">Start</span>
+          </button>
         </div>
-      </footer>
-
-      <aside class="slip" id="slip" aria-label="Posture reminder" hidden>
-        <div class="slip-edge" aria-hidden="true"></div>
-        <p class="slip-kicker">Stop press</p>
-        <p class="slip-title" id="slip-title">Chin back.</p>
-        <p class="slip-body" id="slip-body"></p>
-        <button id="dismiss-slip" class="ghost-button" type="button">Give me a minute</button>
-      </aside>
-
       <p id="live-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
     </div>
     <script type="module" src="./js/main.ts"></script>

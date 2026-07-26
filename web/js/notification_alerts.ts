@@ -1,4 +1,4 @@
-import type { SlipContent } from './monitor_types';
+import type { PostureAlertContent } from './monitor_types';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -9,9 +9,9 @@ import type { SlipContent } from './monitor_types';
 const NOTIFICATION_TAG = 'sit-up-please-posture-reminder';
 
 /**
- * Repeats the on-screen posture reminder as a desktop notification with a short
- * tone, for the times when the page is behind another window. It is off until
- * the person turns it on, and the on-screen reminder works without it.
+ * Alerts a sustained bad posture as a desktop notification with a short tone,
+ * for the times when the page is not the window in front of the person. It is
+ * off until the person turns it on.
  */
 export class NotificationAlerts {
 	private _isEnabled: boolean;
@@ -64,14 +64,28 @@ export class NotificationAlerts {
 		return this._isEnabled;
 	}
 
-	/** Shows one desktop alert for the current posture reminder. */
-	show(slip: SlipContent): void {
+	/**
+	 * Asks for notification permission the first time monitoring starts,
+	 * instead of waiting for the person to find and press the separate footer
+	 * button. Only ever prompts once: it does nothing once the browser has
+	 * already decided (granted or denied), so it never re-prompts and never
+	 * overrides a person who has since turned alerts back off.
+	 */
+	async requestOnFirstStart(): Promise<boolean> {
+		if (this.isSupported === false || Notification.permission !== 'default') return this._isEnabled;
+		const permission = await Notification.requestPermission();
+		this._isEnabled = permission === 'granted';
+		return this._isEnabled;
+	}
+
+	/** Shows one desktop alert for a sustained bad posture. */
+	show(content: PostureAlertContent): void {
 		if (this._isEnabled === false || this.isSupported === false) return;
 		if (Notification.permission !== 'granted') return;
 
 		this._notification?.close();
-		this._notification = new Notification(slip.title, {
-			body: slip.body,
+		this._notification = new Notification(content.title, {
+			body: content.body,
 			tag: NOTIFICATION_TAG,
 			requireInteraction: true,
 		});
