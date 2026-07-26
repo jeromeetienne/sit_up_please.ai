@@ -3,62 +3,125 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f3d35" />
+    <meta name="theme-color" content="#f3f2f2" />
     <title>Sit Up, Please</title>
   </head>
   <body>
-    <main class="app-shell">
-      <header>
-        <p class="eyebrow">Private posture companion</p>
-        <h1>Sit up, please.</h1>
-        <p class="intro">Your camera feed stays on this device. Nothing is uploaded.</p>
+    <div class="page">
+      <header class="masthead">
+        <div class="wordmark">Sit&nbsp;Up,&nbsp;Please</div>
+        <div class="masthead-meta">
+          <span>On-device only</span>
+          <span id="session-number">No.&nbsp;001</span>
+          <span id="dateline"></span>
+        </div>
       </header>
+      <div class="rule-thick"></div>
+      <div class="rule-thin"></div>
 
-      <section class="monitor" aria-labelledby="monitor-title">
-        <div class="camera-panel">
-          <video id="camera" autoplay muted playsinline aria-label="Camera preview"></video>
-          <canvas id="overlay" aria-hidden="true"></canvas>
-          <div id="camera-placeholder" class="camera-placeholder">Camera is off</div>
-        </div>
-        <div class="monitor-details">
-          <p class="eyebrow">Live monitor</p>
-          <h2 id="monitor-title">Ready when you are</h2>
-          <p id="status" class="status" role="status">Start the camera to test landmark tracking.</p>
-          <p id="calibration-progress" class="calibration-progress" hidden></p>
-          <dl class="measurements">
-            <div><dt>Tracking</dt><dd id="tracking-value">—</dd></div>
-            <div><dt>Reference posture</dt><dd id="reference-value">Not calibrated</dd></div>
-            <div><dt>Analysis rate</dt><dd id="fps-value">—</dd></div>
-          </dl>
-          <div class="actions">
-            <button id="start-camera" type="button">Start camera</button>
-            <button id="calibrate" type="button" class="secondary-action" disabled>Calibrate posture</button>
-            <button id="pause-monitoring" type="button" class="secondary-action" disabled>Pause monitoring</button>
-            <label class="debug-toggle" for="show-debug">
-              <input id="show-debug" type="checkbox" checked />
-              Show facial landmark overlay
-            </label>
-            <label class="debug-toggle" for="enable-notifications">
-              <input id="enable-notifications" type="checkbox" disabled />
-              Use browser notifications
-            </label>
+      <main class="main-grid">
+        <section class="video-column" aria-label="Camera">
+          <div class="video-plate">
+            <video id="camera" autoplay muted playsinline aria-label="Camera preview"></video>
+            <canvas id="landmark-overlay" aria-hidden="true" hidden></canvas>
+            <div class="dot-screen" aria-hidden="true"></div>
+            <div class="state-spine" aria-hidden="true"></div>
+            <div class="plate-placeholder" id="plate-placeholder">
+              <p class="placeholder-title">Camera off</p>
+              <p class="placeholder-note">Nothing is recorded, ever</p>
+            </div>
+            <div class="calibration-overlay" id="calibration-overlay" hidden>
+              <p class="calibration-kicker" id="calibration-kicker">Hold your best posture</p>
+              <p class="calibration-count" id="calibration-count">3</p>
+            </div>
+            <div class="live-badge">
+              <span class="live-dot" aria-hidden="true"></span>
+              <span id="feed-label">Off</span>
+            </div>
           </div>
+          <div class="caption-row">
+            <span id="camera-note">Front camera · mirrored</span>
+            <span id="rate-note">Idle</span>
+          </div>
+        </section>
+
+        <section class="verdict-column" aria-label="Posture">
+          <p class="kicker">
+            <span class="kicker-dot" aria-hidden="true"></span>
+            <span id="kicker-label">Standing by</span>
+          </p>
+
+          <div class="verdict-row">
+            <svg class="posture-figure" viewBox="0 0 48 72" width="46" height="69" fill="none" aria-hidden="true">
+              <path d="M6 68h36" stroke="currentColor" stroke-opacity=".28" stroke-width="2"></path>
+              <path id="posture-spine" d="M23 62 C 23 48, 23 38, 23 28" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></path>
+              <circle id="posture-head" cx="23" cy="18" r="8" stroke="currentColor" stroke-width="3.5" fill="currentColor" fill-opacity=".16"></circle>
+            </svg>
+            <h1 class="verdict" id="verdict">Ready.</h1>
+          </div>
+
+          <p class="guidance" id="guidance">Start the camera and I will hold you to the posture you calibrate. One line, one colour, no dashboard.</p>
+          <p class="verdict-meta" id="verdict-meta">Nothing has been watched yet.</p>
+
+          <div class="start-block" id="start-block">
+            <button id="start-monitoring" class="primary-button" type="button">Start watching my back</button>
+            <span class="start-note">Takes three seconds to calibrate.</span>
+          </div>
+
+          <div class="figures" id="figures" hidden>
+            <div class="figure">
+              <span class="figure-value" id="upright-value">100%</span>
+              <span class="figure-label">Upright</span>
+            </div>
+            <div class="figure">
+              <span class="figure-value" id="slips-value">0</span>
+              <span class="figure-label">Slips</span>
+            </div>
+            <div class="figure">
+              <span class="figure-value" id="best-run-value">0s</span>
+              <span class="figure-label">Best run</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <section class="session-ribbon" id="session-ribbon" aria-label="Session history" hidden>
+        <div class="ribbon-header">
+          <span>The session so far</span>
+          <span id="session-elapsed">0s</span>
         </div>
+        <div class="ribbon-bars" id="ribbon-bars"></div>
       </section>
 
-      <section class="privacy-note" aria-label="Privacy">
-        <strong>On-device by design.</strong>
-        <span>Camera frames and facial landmarks are processed in your browser only.</span>
-      </section>
-
-      <footer class="site-footer">
-        Made with <i class="bi bi-heart-fill footer-heart" aria-hidden="true"></i><span class="visually-hidden">love</span> by
-        <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank" rel="noreferrer">Jerome Etienne</a>
-        <a class="footer-repository" href="https://github.com/jeromeetienne/sit_up_please.ai" target="_blank" rel="noreferrer" aria-label="Sit Up, Please repository on GitHub" title="Sit Up, Please repository on GitHub">
-          <i class="bi bi-github" aria-hidden="true"></i>
-        </a>
+      <footer class="page-footer">
+        <span class="footer-note">
+          <b>On-device by design.</b> Frames and landmarks never leave this browser.
+          <span class="footer-credit">
+            Made with <i class="bi bi-heart-fill footer-heart" aria-hidden="true"></i><span class="visually-hidden">love</span> by
+            <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank" rel="noreferrer">Jerome Etienne</a>
+            <a class="footer-repository" href="https://github.com/jeromeetienne/sit_up_please.ai" target="_blank" rel="noreferrer" aria-label="Sit Up, Please repository on GitHub" title="Sit Up, Please repository on GitHub">
+              <i class="bi bi-github" aria-hidden="true"></i>
+            </a>
+          </span>
+        </span>
+        <div class="footer-actions">
+          <button id="toggle-landmarks" class="ghost-button" type="button">Landmarks: on</button>
+          <button id="toggle-alerts" class="ghost-button" type="button" disabled>Desktop alerts: off</button>
+          <button id="recalibrate" class="ghost-button" type="button">Recalibrate</button>
+          <button id="toggle-monitoring" class="ghost-button" type="button">Start</button>
+        </div>
       </footer>
-    </main>
+
+      <aside class="slip" id="slip" aria-label="Posture reminder" hidden>
+        <div class="slip-edge" aria-hidden="true"></div>
+        <p class="slip-kicker">Stop press</p>
+        <p class="slip-title" id="slip-title">Chin back.</p>
+        <p class="slip-body" id="slip-body"></p>
+        <button id="dismiss-slip" class="ghost-button" type="button">Give me a minute</button>
+      </aside>
+
+      <p id="live-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
+    </div>
     <script type="module" src="../../web/js/main.ts"></script>
   </body>
 </html>

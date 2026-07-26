@@ -1,57 +1,701 @@
-:root {
-  color: #1b2d29;
-  background: #f4f3ed;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+@import './tokens.css';
+
+/*
+ * "Sit Up, Please" — the single monitor page.
+ *
+ * The page is laid out as a broadsheet front page: an open sheet structured by
+ * whitespace and one thick-and-thin rule pair, with the camera picture as the
+ * hero and the posture state carried by one colour, one pictogram and one word.
+ */
+
+* {
+	box-sizing: border-box;
 }
 
-* { box-sizing: border-box; }
+html,
+body {
+	margin: 0;
+	background: var(--color-bg);
+}
 
-body { margin: 0; min-width: 320px; }
+body {
+	min-width: 320px;
+	color: var(--color-text);
+	font-family: var(--font-body);
+}
 
-button { font: inherit; }
+button {
+	font: inherit;
+}
 
-.app-shell { width: min(1120px, calc(100% - 48px)); margin: 0 auto; padding: 80px 0; }
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0 0 0 0);
+}
 
-header { max-width: 700px; margin-bottom: 42px; }
+@keyframes bs-blink {
+	0%,
+	100% { opacity: 1; }
+	50% { opacity: 0.15; }
+}
 
-.eyebrow { color: #4b655e; font-size: 0.8rem; font-weight: 750; letter-spacing: 0.12em; margin: 0 0 12px; text-transform: uppercase; }
+@keyframes bs-slip {
+	from { opacity: 0; transform: translateY(14px) rotate(-0.6deg); }
+	to { opacity: 1; transform: translateY(0) rotate(-0.6deg); }
+}
 
-h1, h2, p { margin-top: 0; }
-h1 { font-size: clamp(3rem, 8vw, 6rem); letter-spacing: -0.075em; line-height: 0.92; margin-bottom: 22px; }
-h2 { font-size: clamp(1.8rem, 4vw, 3rem); letter-spacing: -0.045em; line-height: 1; margin-bottom: 16px; }
-.intro { color: #53655f; font-size: 1.15rem; line-height: 1.55; }
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Page frame and masthead                                                   */
+/*///////////////////////////////////////////////////////////////////////////*/
 
-.monitor { background: #0f3d35; border-radius: 28px; box-shadow: 0 24px 80px rgb(22 48 42 / 18%); color: #eff7eb; display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr); gap: 36px; padding: 24px; }
-.camera-panel { aspect-ratio: 16 / 10; background: #071e1a; border-radius: 18px; overflow: hidden; position: relative; }
-video, canvas { height: 100%; inset: 0; object-fit: cover; position: absolute; width: 100%; }
-video { transform: scaleX(-1); }
-.camera-placeholder { align-items: center; color: #afc7bd; display: flex; height: 100%; justify-content: center; position: relative; }
-.camera-placeholder[hidden] { display: none; }
-.monitor-details { align-self: center; padding: 16px 12px 16px 0; }
-.monitor-details .eyebrow { color: #a9d2c3; }
-.status { color: #cfddd7; line-height: 1.55; min-height: 3.1em; }
-.measurements { border-block: 1px solid rgb(239 247 235 / 20%); display: grid; gap: 16px; margin: 28px 0; padding: 20px 0; }
-.measurements div { display: flex; justify-content: space-between; gap: 12px; }
-dt { color: #a9d2c3; }
-dd { font-weight: 700; margin: 0; text-align: right; }
-button { background: #d9ff5a; border: 0; border-radius: 999px; color: #14342d; cursor: pointer; font-weight: 800; padding: 13px 20px; }
-button:disabled { cursor: wait; opacity: 0.7; }
-.secondary-action { background: transparent; border: 1px solid rgb(239 247 235 / 50%); color: #eff7eb; }
-.actions { align-items: center; display: flex; flex-wrap: wrap; gap: 16px; }
-.debug-toggle { align-items: center; color: #cfddd7; cursor: pointer; display: flex; font-size: 0.9rem; gap: 8px; }
-.debug-toggle input { accent-color: #d9ff5a; height: 1rem; width: 1rem; }
-.debug-toggle:has(input:disabled) { cursor: not-allowed; opacity: 0.55; }
-.calibration-progress { color: #d9ff5a; font-weight: 700; margin-bottom: 16px; }
-.privacy-note { align-items: baseline; color: #52635e; display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 28px 8px; }
-.privacy-note strong { color: #1b2d29; }
-.site-footer { color: #52635e; margin: 48px 8px 0; text-align: center; }
-.site-footer a { color: #1b2d29; font-weight: 700; }
-.footer-heart { color: #d8374b; margin-inline: 0.15em; }
-.footer-repository { font-size: 0.95em; margin-left: 0.35em; }
-.visually-hidden { height: 1px; margin: -1px; overflow: hidden; position: absolute; width: 1px; clip: rect(0 0 0 0); }
+/*
+ * The page fills exactly one screen — masthead, rules, the camera plate, the
+ * verdict, the session ribbon and the footer all fit within the viewport
+ * height, with no page scroll. The camera plate is the only flexible piece:
+ * it takes whatever height is left over once everything else has claimed its
+ * own, so it grows on a tall screen and shrinks on a short one.
+ */
+.page {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	padding: var(--pad) var(--pad) 0;
+	overflow: clip;
+	font-size: 15px;
+	line-height: 1.55;
+}
 
-@media (max-width: 760px) {
-  .app-shell { width: min(100% - 32px, 1120px); padding: 48px 0; }
-  .monitor { grid-template-columns: 1fr; gap: 12px; padding: 14px; }
-  .monitor-details { padding: 18px 10px 12px; }
+.masthead {
+	display: flex;
+	flex: none;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 24px;
+}
+
+.wordmark {
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: 15px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+
+.masthead-meta {
+	display: flex;
+	flex: none;
+	gap: 22px;
+	white-space: nowrap;
+	font-size: 12px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--color-neutral-700);
+}
+
+.rule-thick {
+	flex: none;
+	height: 3px;
+	margin-top: 9px;
+	background: var(--color-text);
+}
+
+.rule-thin {
+	flex: none;
+	height: 1px;
+	margin-top: 3px;
+	margin-bottom: var(--gap);
+	background: var(--color-text);
+}
+
+.main-grid {
+	display: grid;
+	flex: 1 1 auto;
+	min-height: 0;
+	grid-template-columns: minmax(0, 1.35fr) minmax(420px, 0.65fr);
+	gap: var(--gap);
+	align-items: stretch;
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Left column — the camera plate                                            */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+.video-column {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.video-plate {
+	position: relative;
+	flex: 1 1 auto;
+	min-height: 0;
+	background: var(--color-neutral-900);
+	border-radius: var(--radius-md);
+	overflow: hidden;
+}
+
+.video-plate video,
+.video-plate canvas {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* The camera picture is mirrored, as a person expects of a self view. The
+   landmark overlay is mirrored in its drawing code instead, so that it is not
+   mirrored twice. */
+.video-plate video {
+	filter: grayscale(0.4) contrast(1.18);
+	transform: scaleX(-1);
+}
+
+.video-plate canvas[hidden] {
+	display: none;
+}
+
+/* The newsprint dot screen that turns the camera picture into printed imagery. */
+.dot-screen {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background-image: radial-gradient(circle at 1px 1px, rgb(0 0 0 / 42%) 1px, transparent 1.2px);
+	background-size: 4px 4px;
+	mix-blend-mode: multiply;
+	opacity: 0.55;
+}
+
+/* The peripheral-vision indicator: a strip of the state colour down the edge. */
+.state-spine {
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 9px;
+	background: var(--state);
+	transition: background 0.5s ease;
+}
+
+.plate-placeholder {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	color: var(--color-neutral-400);
+}
+
+.plate-placeholder[hidden] {
+	display: none;
+}
+
+.placeholder-title {
+	margin: 0;
+	font-family: var(--font-heading);
+	font-size: 26px;
+	color: var(--color-neutral-300);
+}
+
+.placeholder-note {
+	margin: 0;
+	font-size: 13px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+}
+
+.calibration-overlay {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	background: rgb(32 30 29 / 72%);
+	color: var(--color-bg);
+}
+
+.calibration-overlay[hidden] {
+	display: none;
+}
+
+.calibration-kicker {
+	margin: 0;
+	font-size: 12px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	opacity: 0.75;
+}
+
+.calibration-count {
+	margin: 0;
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: 112px;
+	line-height: 1;
+}
+
+.live-badge {
+	position: absolute;
+	right: 14px;
+	top: 14px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 11px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--color-bg);
+	opacity: 0.8;
+}
+
+.live-dot {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: var(--state);
+	animation: bs-blink 1.8s infinite;
+}
+
+.caption-row {
+	display: flex;
+	flex: none;
+	justify-content: space-between;
+	gap: 18px;
+	margin-top: 9px;
+	font-size: 11px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-neutral-600);
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Right column — the verdict                                                */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+.verdict-column {
+	display: flex;
+	flex-direction: column;
+	gap: 22px;
+	padding-top: 2px;
+	min-height: 0;
+	overflow: hidden;
+	container-type: inline-size;
+}
+
+.kicker {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin: 0;
+	font-size: 12px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--color-neutral-700);
+}
+
+.kicker-dot {
+	width: 8px;
+	height: 8px;
+	flex: none;
+	border-radius: 50%;
+	background: var(--state);
+	transition: background 0.5s ease;
+}
+
+.verdict-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 18px;
+	min-width: 0;
+}
+
+.posture-figure {
+	flex: none;
+	margin-top: 6px;
+	overflow: visible;
+	color: var(--state);
+	transition: color 0.5s ease;
+}
+
+/*
+ * The headline size follows the width of the page, but never grows past what
+ * the column can hold: the longest word, "Slouching.", must stay on one line
+ * rather than break after its full stop.
+ */
+.verdict {
+	margin: 0;
+	min-width: 0;
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: clamp(40px, min(5.2vw, 15.5cqw), 78px);
+	line-height: 0.94;
+	letter-spacing: -0.03em;
+	overflow-wrap: anywhere;
+	hyphens: auto;
+	text-wrap: balance;
+	color: var(--state);
+	transition: color 0.5s ease;
+}
+
+.guidance {
+	margin: 0;
+	max-width: 34ch;
+	font-size: 19px;
+	line-height: 1.45;
+	text-wrap: pretty;
+}
+
+.verdict-meta {
+	margin: 0;
+	font-size: 14px;
+	font-style: italic;
+	color: var(--color-neutral-700);
+}
+
+.start-block {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 12px;
+	margin-top: 6px;
+}
+
+.start-block[hidden] {
+	display: none;
+}
+
+.primary-button {
+	padding: 15px 30px;
+	border: none;
+	border-radius: var(--radius-md);
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: 19px;
+	background: var(--color-accent);
+	color: #fff;
+	cursor: pointer;
+	transition: background 0.18s;
+}
+
+.primary-button:hover {
+	background: var(--color-accent-600);
+}
+
+.primary-button:active {
+	background: var(--color-accent-700);
+}
+
+.primary-button:disabled {
+	cursor: progress;
+	opacity: 0.7;
+}
+
+.start-note {
+	font-size: 13px;
+	color: var(--color-neutral-700);
+}
+
+.figures {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 18px;
+	margin-top: 4px;
+	padding-top: 18px;
+	border-top: 1px solid var(--color-divider);
+}
+
+.figures[hidden] {
+	display: none;
+}
+
+.figure {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.figure-value {
+	font-family: var(--font-heading);
+	font-size: 38px;
+	line-height: 1;
+}
+
+.figure-label {
+	font-size: 11px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-neutral-700);
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Session ribbon                                                            */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+.session-ribbon {
+	flex: none;
+	margin-top: var(--gap);
+}
+
+/*
+ * Hidden as `visibility`, not `display: none`: the ribbon is a direct child
+ * of the one-screen flex page, so removing it from the flow would hand its
+ * height to the camera plate (the page's only flexible piece), and the video
+ * would visibly grow every time the ribbon disappears — e.g. for the three
+ * seconds of every recalibration. Keeping its box in place holds the plate's
+ * height constant across phases instead.
+ */
+.session-ribbon[hidden] {
+	visibility: hidden;
+}
+
+.ribbon-header {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	margin-bottom: 8px;
+	font-size: 11px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-neutral-700);
+}
+
+.ribbon-bars {
+	display: flex;
+	align-items: flex-end;
+	gap: 2px;
+	height: 52px;
+	border-bottom: 1px solid var(--color-text);
+}
+
+.ribbon-bar {
+	flex: 1 1 0;
+	min-width: 2px;
+	background: var(--state-good);
+	opacity: 0.55;
+}
+
+.ribbon-bar-bad {
+	background: var(--state-bad);
+	opacity: 1;
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Footer                                                                    */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+.page-footer {
+	display: flex;
+	flex: none;
+	align-items: center;
+	justify-content: space-between;
+	gap: 24px;
+	margin-top: var(--gap);
+	padding: 16px 0 22px;
+	border-top: 1px solid var(--color-divider);
+	opacity: 0.4;
+	transition: opacity 0.22s;
+}
+
+.page-footer:hover,
+.page-footer:focus-within {
+	opacity: 1;
+}
+
+.footer-note {
+	font-size: 13px;
+	color: var(--color-neutral-700);
+}
+
+.footer-note b {
+	font-weight: var(--font-heading-weight);
+	color: var(--color-text);
+}
+
+.footer-note a {
+	color: var(--color-neutral-700);
+	text-underline-offset: 3px;
+}
+
+.footer-note a:hover {
+	color: var(--color-text);
+}
+
+.footer-credit {
+	display: block;
+	margin-top: 4px;
+}
+
+.footer-heart {
+	margin-inline: 0.15em;
+}
+
+.footer-repository {
+	margin-left: 0.35em;
+}
+
+.footer-actions {
+	display: flex;
+	flex: none;
+	gap: 8px;
+}
+
+.ghost-button {
+	padding: 8px 14px;
+	border: 1px solid var(--color-divider);
+	border-radius: var(--radius-md);
+	background: transparent;
+	font-family: var(--font-body);
+	font-size: 13px;
+	color: var(--color-neutral-700);
+	cursor: pointer;
+}
+
+.ghost-button:hover {
+	border-color: var(--color-text);
+	color: var(--color-text);
+}
+
+.ghost-button:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.ghost-button:disabled:hover {
+	border-color: var(--color-divider);
+	color: var(--color-neutral-700);
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	The "stop press" slip                                                     */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+.slip {
+	position: fixed;
+	right: 32px;
+	bottom: 32px;
+	z-index: 20;
+	width: 322px;
+	padding: 20px 22px 18px;
+	border-radius: var(--radius-md);
+	background: var(--color-bg);
+	box-shadow: var(--shadow-lg);
+	animation: bs-slip 0.3s ease both;
+}
+
+.slip[hidden] {
+	display: none;
+}
+
+.slip-edge {
+	height: 5px;
+	margin: -20px -22px 15px;
+	border-radius: var(--radius-md) var(--radius-md) 0 0;
+	background: var(--state);
+}
+
+.slip-kicker {
+	margin: 0 0 5px;
+	font-size: 11px;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--state);
+}
+
+.slip-title {
+	margin: 0 0 7px;
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: 27px;
+	line-height: 1.05;
+}
+
+.slip-body {
+	margin: 0 0 14px;
+	font-size: 15px;
+	color: var(--color-neutral-800);
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Responsive and reduced motion                                             */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+/*
+ * Below the split-layout width the video and the verdict stack as two rows
+ * instead of two columns. There is no longer one clear height to divide
+ * between them, so the one-screen constraint is dropped here: the page goes
+ * back to its natural height and the camera plate back to a fixed 4:3 shape,
+ * scrolling if the stacked content runs past the screen.
+ */
+@media (max-width: 1099px) {
+	:root {
+		--pad: 28px;
+		--gap: 26px;
+	}
+
+	.page {
+		height: auto;
+		min-height: 100vh;
+		overflow: visible;
+	}
+
+	.main-grid {
+		flex: none;
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.video-plate {
+		flex: none;
+		aspect-ratio: 4 / 3;
+	}
+
+	.verdict-column {
+		overflow: visible;
+	}
+
+	/*
+	 * The video plate is a fixed 4:3 shape in this layout (above), so nothing
+	 * reads its height off the ribbon's presence — safe to remove it from the
+	 * flow entirely and avoid the reserved blank strip on the idle screen.
+	 */
+	.session-ribbon[hidden] {
+		display: none;
+	}
+
+	.page-footer {
+		flex-wrap: wrap;
+		opacity: 1;
+	}
+
+	.slip {
+		right: 16px;
+		bottom: 16px;
+		width: min(322px, calc(100vw - 32px));
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.live-dot {
+		animation: none;
+	}
+
+	.head-ring,
+	.shoulder-bar {
+		transition: border-color 0.5s ease, background 0.5s ease;
+	}
+
+	.slip {
+		animation: none;
+		transform: rotate(-0.6deg);
+	}
 }
