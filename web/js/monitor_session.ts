@@ -271,8 +271,7 @@ export class MonitorSession {
 			stateColour = 'good';
 		}
 
-		const lean = isIdle ? 0.1 : this._lean;
-		const forwardOffset = Math.max(0, lean) * 11;
+		const postureFigure = MonitorSession._postureFigure(isBad, this._direction, this._lean);
 		const uprightShare = this._sessionSec > 0 ? Math.round((this._goodSec / this._sessionSec) * 100) : 100;
 
 		return {
@@ -285,11 +284,9 @@ export class MonitorSession {
 			verdict,
 			guidance,
 			verdictMeta,
-			spinePath: isBad
-				? `M22 62 C 24 48, 30 40, ${(30 + forwardOffset).toFixed(1)} 28`
-				: 'M23 62 C 23 48, 23 38, 23 28',
-			headX: isBad ? 32 + forwardOffset : 23,
-			headY: isBad ? 21 : 18,
+			spinePath: postureFigure.spinePath,
+			headX: postureFigure.headX,
+			headY: postureFigure.headY,
 			kickerLabel: MonitorSession._kickerLabel(isIdle, this._isPaused),
 			feedLabel: MonitorSession._feedLabel(isIdle, cameraState),
 			cameraNote: cameraState === 'denied'
@@ -332,5 +329,43 @@ export class MonitorSession {
 		if (isIdle) return 'Start';
 		if (isPaused) return 'Resume';
 		return 'Pause';
+	}
+
+	/**
+	 * Returns the spine curve and head position for the small figure next to
+	 * the verdict. Upright stays centred and straight. A sustained bad posture
+	 * moves the head toward the same word as the verdict text: down for
+	 * leaning forward, up for leaning back, and sideways for leaning left or
+	 * right, so the figure never points a different way than the words next
+	 * to it.
+	 */
+	private static _postureFigure(isBad: boolean, direction: PostureDirection, lean: number): { spinePath: string; headX: number; headY: number } {
+		if (isBad === false) return { spinePath: 'M23 62 C 23 48, 23 38, 23 28', headX: 23, headY: 18 };
+
+		const offset = Math.min(1, Math.max(0, lean)) * 10;
+		let headX = 23;
+		let headY = 18;
+		if (direction === 'forward') {
+			headX = 23 + offset * 0.6;
+			headY = 18 + offset * 0.9;
+		} else if (direction === 'backward') {
+			headX = 23 - offset * 0.6;
+			headY = 18 - offset * 0.7;
+		} else if (direction === 'left') {
+			headX = 23 - offset;
+			headY = 18 + offset * 0.15;
+		} else {
+			headX = 23 + offset;
+			headY = 18 + offset * 0.15;
+		}
+
+		const spineTopY = headY + 10;
+		const spineTopX = 23 + (headX - 23) * 0.75;
+		const spineMidX = 23 + (headX - 23) * 0.4;
+		return {
+			spinePath: `M23 62 C 23 48, ${spineMidX.toFixed(1)} 40, ${spineTopX.toFixed(1)} ${spineTopY.toFixed(1)}`,
+			headX,
+			headY,
+		};
 	}
 }

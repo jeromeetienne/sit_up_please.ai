@@ -109,7 +109,7 @@ export class MonitorView {
 		this._verdictMeta.textContent = viewModel.verdictMeta;
 		this._postureSpine.setAttribute('d', viewModel.spinePath);
 		this._postureHead.setAttribute('cx', viewModel.headX.toFixed(1));
-		this._postureHead.setAttribute('cy', String(viewModel.headY));
+		this._postureHead.setAttribute('cy', viewModel.headY.toFixed(1));
 
 		this._startBlock.hidden = viewModel.isIdle === false;
 		this._figures.hidden = viewModel.isLive === false;
