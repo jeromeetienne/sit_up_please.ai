@@ -35,7 +35,6 @@ export class PostureTracker {
 	private _lean = 0;
 	private _direction: PostureDirection = 'forward';
 	private _lastFaceAt = 0;
-	private _lastAnalysisAt = 0;
 	private _isLoopRunning = false;
 	private _isCollectingCalibration = false;
 	private _calibrationSamples: PostureMeasurement[] = [];
@@ -114,7 +113,7 @@ export class PostureTracker {
 		this._resizeCanvas();
 		if (this._isLoopRunning === false) {
 			this._isLoopRunning = true;
-			requestAnimationFrame(() => void this._analyseFrame());
+			this._scheduleNextFrame();
 		}
 	}
 
@@ -170,20 +169,30 @@ export class PostureTracker {
 
 		const landmarker = this._faceLandmarker;
 		const isFrameReady = landmarker !== undefined && this._video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
-		const now = performance.now();
-		if (isFrameReady === false || now - this._lastAnalysisAt < ANALYSIS_INTERVAL_MS) {
-			requestAnimationFrame(() => void this._analyseFrame());
+		if (isFrameReady === false) {
+			this._scheduleNextFrame();
 			return;
 		}
-		this._lastAnalysisAt = now;
 
+		const now = performance.now();
 		const result = landmarker.detectForVideo(this._video, now);
 		const landmarks = result.faceLandmarks[0] as FacialLandmark[] | undefined;
 		this._drawLandmarks(landmarks);
 		if (landmarks !== undefined) {
 			this._readMeasurement(landmarks, now);
 		}
-		requestAnimationFrame(() => void this._analyseFrame());
+		this._scheduleNextFrame();
+	}
+
+	/**
+	 * Queues the next frame analysis with a timer rather than
+	 * `requestAnimationFrame`, which stops firing the moment the tab or window
+	 * is not the one on screen — behind another window, on another virtual
+	 * desktop, or minimized. A timer keeps firing there too, so the reading
+	 * keeps updating (at a browser-throttled rate) instead of freezing.
+	 */
+	private _scheduleNextFrame(): void {
+		setTimeout(() => void this._analyseFrame(), ANALYSIS_INTERVAL_MS);
 	}
 
 	/** Converts one set of landmarks into a measurement and updates the reading. */
