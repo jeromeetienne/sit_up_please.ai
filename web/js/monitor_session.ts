@@ -23,6 +23,7 @@ const RIBBON_BAR_RANGE_PX = 36;
 export type MonitorSessionCallbacks = {
 	onUpdate: (viewModel: MonitorViewModel) => void;
 	onAlertRaised: (content: PostureAlertContent) => void;
+	onAlertTick: (badRunSec: number) => void;
 	onAlertCleared: () => void;
 };
 
@@ -188,17 +189,23 @@ export class MonitorSession {
 		this.publish();
 	}
 
-	/** Raises the desktop alert after a sustained slouch and clears it on correction. */
+	/**
+	 * Raises the desktop alert after a sustained slouch and clears it on
+	 * correction. While the alert stays active, every tick also lets the
+	 * tone repeat and grow stronger for as long as the slouch continues.
+	 */
 	private _updateAlert(isBad: boolean): void {
 		if (isBad === false) {
 			this._clearAlert();
 			return;
 		}
-		if (this._isAlertActive) return;
 		if (this._badRunSec < ALERT_DELAY_SEC) return;
 
-		this._isAlertActive = true;
-		this._callbacks.onAlertRaised(MonitorCopy.alertContent(this._direction));
+		if (this._isAlertActive === false) {
+			this._isAlertActive = true;
+			this._callbacks.onAlertRaised(MonitorCopy.alertContent(this._direction));
+		}
+		this._callbacks.onAlertTick(this._badRunSec);
 	}
 
 	/** Closes the desktop alert once the posture is corrected. */

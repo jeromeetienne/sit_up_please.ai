@@ -42,6 +42,7 @@ class Main {
 		const session = new MonitorSession(tracker, {
 			onUpdate: (viewModel) => view.render(viewModel),
 			onAlertRaised: (content) => alerts.show(content),
+			onAlertTick: (badRunSec) => alerts.escalate(badRunSec),
 			onAlertCleared: () => alerts.clear(),
 		});
 
