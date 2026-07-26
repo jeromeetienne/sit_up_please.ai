@@ -3,9 +3,11 @@ import '@fontsource-variable/source-serif-4/wght-italic.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import '../css/style.css';
 
+import { InstallPrompt } from './install_prompt';
 import { MonitorSession } from './monitor_session';
 import { MonitorView } from './monitor_view';
 import { NotificationAlerts } from './notification_alerts';
+import { OfflineSupport } from './offline_support';
 import { PostureTracker } from './posture_tracker';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -30,8 +32,11 @@ class Main {
 			throw new Error('The posture monitor could not find the camera elements.');
 		}
 
+		OfflineSupport.register();
+
 		const view = new MonitorView();
 		const alerts = new NotificationAlerts();
+		const installPrompt = new InstallPrompt();
 		let drawsLandmarks = true;
 		const tracker = new PostureTracker(video, landmarkCanvas, drawsLandmarks);
 		const session = new MonitorSession(tracker, {
@@ -62,10 +67,13 @@ class Main {
 				tracker.setDrawsLandmarks(drawsLandmarks);
 				view.setLandmarksState(drawsLandmarks);
 			},
+			onInstall: () => void installPrompt.promptInstall(),
 		});
 
 		view.setAlertsState(alerts.isSupported, alerts.isEnabled);
 		view.setLandmarksState(drawsLandmarks);
+		view.setInstallState(false);
+		installPrompt.onAvailabilityChange((isAvailable) => view.setInstallState(isAvailable));
 		session.publish();
 		window.addEventListener('pagehide', () => session.stop());
 	}

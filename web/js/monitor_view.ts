@@ -17,6 +17,7 @@ export type MonitorActions = {
 	onToggleMonitoring: () => void;
 	onToggleAlerts: () => void;
 	onToggleLandmarks: () => void;
+	onInstall: () => void;
 };
 
 /**
@@ -49,6 +50,7 @@ export class MonitorView {
 	private readonly _sessionRibbon = MonitorView._require<HTMLElement>('session-ribbon');
 	private readonly _sessionElapsed = MonitorView._require<HTMLElement>('session-elapsed');
 	private readonly _ribbonBars = MonitorView._require<HTMLElement>('ribbon-bars');
+	private readonly _installButton = MonitorView._require<HTMLButtonElement>('install-app');
 	private readonly _landmarksButton = MonitorView._require<HTMLButtonElement>('toggle-landmarks');
 	private readonly _landmarksIcon = MonitorView._require<HTMLElement>('toggle-landmarks-icon');
 	private readonly _landmarksLabel = MonitorView._require<HTMLElement>('toggle-landmarks-label');
@@ -76,6 +78,7 @@ export class MonitorView {
 		this._monitoringButton.addEventListener('click', actions.onToggleMonitoring);
 		this._alertsButton.addEventListener('click', actions.onToggleAlerts);
 		this._landmarksButton.addEventListener('click', actions.onToggleLandmarks);
+		this._installButton.addEventListener('click', actions.onInstall);
 	}
 
 	/** Turns the desktop alert button on, and labels its current setting. */
@@ -83,6 +86,11 @@ export class MonitorView {
 		this._alertsButton.disabled = isSupported === false;
 		this._alertsIcon.className = isEnabled ? 'bi bi-bell' : 'bi bi-bell-slash';
 		this._alertsLabel.textContent = isEnabled ? 'Desktop alerts: on' : 'Desktop alerts: off';
+	}
+
+	/** Shows or hides the install button, following the browser's own install-prompt availability. */
+	setInstallState(isAvailable: boolean): void {
+		this._installButton.hidden = isAvailable === false;
 	}
 
 	/** Labels the landmark-overlay button with its current setting. */
