@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300..700;1,8..60,300..700&display=swap">
+<link rel="stylesheet" href="_ds/broadsheet-8d6e7696-3cd1-45f5-be40-7a8d4876b193/styles.css">
+<script src="_ds/broadsheet-8d6e7696-3cd1-45f5-be40-7a8d4876b193/_ds_bundle.js"></script>
+<style>
+:root{--state:#7d7979;--state-tint:#eae7e7;--state-deep:#444141;--pad:44px;--gap:44px;--grid:minmax(0,1.4fr) minmax(340px,0.6fr);--tilt:0deg;--bob:0px}
+html,body{margin:0;background:#f3f2f2}
+a{color:var(--color-accent);text-underline-offset:3px}
+a:hover{color:var(--color-accent-700)}
+@keyframes bs-blink{0%,100%{opacity:1}50%{opacity:.15}}
+@keyframes bs-slip{from{opacity:0;transform:translateY(14px) rotate(-.6deg)}to{opacity:1;transform:translateY(0) rotate(-.6deg)}}
+@keyframes bs-sweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+</style>
+</helmet>
+<div style="min-height:100vh;background:var(--color-bg);color:var(--color-text);font-family:var(--font-body);font-size:15px;line-height:1.55;padding:var(--pad) var(--pad) 0;box-sizing:border-box;position:relative;overflow-x:clip">
+
+  <div style="position:absolute;top:18px;left:18px;width:13px;height:13px;color:var(--color-neutral-400);border-left:1px solid currentColor;border-top:1px solid currentColor"></div>
+  <div style="position:absolute;top:18px;right:18px;width:13px;height:13px;color:var(--color-neutral-400);border-right:1px solid currentColor;border-top:1px solid currentColor"></div>
+
+  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:24px">
+    <div style="font-family:var(--font-heading);font-weight:600;font-size:15px;letter-spacing:.14em;text-transform:uppercase">Sit&nbsp;Up,&nbsp;Please</div>
+    <div style="display:flex;gap:22px;flex:none;white-space:nowrap;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-neutral-700)">
+      <span>On-device only</span>
+      <span>No.&nbsp;{{ sessionNo }}</span>
+      <span>{{ dateline }}</span>
+    </div>
+  </div>
+  <div style="height:3px;background:var(--color-text);margin-top:9px"></div>
+  <div style="height:1px;background:var(--color-text);margin-top:3px;margin-bottom:var(--gap)"></div>
+
+  <div style="display:grid;grid-template-columns:var(--grid);gap:var(--gap);align-items:start">
+
+    <div style="position:relative">
+      <div style="position:relative;aspect-ratio:4/3;background:var(--color-neutral-900);border-radius:var(--radius-md);overflow:hidden">
+        <video ref="{{ videoRef }}" autoPlay="{{ true }}" muted="{{ true }}" playsInline="{{ true }}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:grayscale(.4) contrast(1.18);transform:scaleX(-1)"></video>
+        <div style="position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle at 1px 1px, rgba(0,0,0,.42) 1px, transparent 1.2px);background-size:4px 4px;mix-blend-mode:multiply;opacity:.55"></div>
+
+        <sc-if value="{{ guidesOn }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;pointer-events:none">
+            <div style="position:absolute;left:50%;top:6%;bottom:6%;width:0;border-left:1px dashed rgba(243,242,242,.35)"></div>
+            <div style="position:absolute;left:50%;top:20%;width:96px;height:96px;margin-left:-48px;border:2px solid var(--state);border-radius:50%;transform:translate(calc(var(--tilt) * 1.4),var(--bob));transition:transform .35s ease,border-color .5s ease"></div>
+            <div style="position:absolute;left:50%;top:58%;width:56%;height:2px;margin-left:-28%;background:var(--state);transform-origin:50% 50%;transform:rotate(var(--tilt)) translateY(var(--bob));transition:transform .35s ease,background .5s ease"></div>
+            <div style="position:absolute;left:50%;top:58%;width:9px;height:9px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--state)"></div>
+          </div>
+        </sc-if>
+
+        <div style="position:absolute;left:0;top:0;bottom:0;width:9px;background:var(--state);transition:background .5s ease"></div>
+
+        <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--color-neutral-400)">
+            <div style="font-family:var(--font-heading);font-size:26px;color:var(--color-neutral-300)">Camera off</div>
+            <div style="font-size:13px;letter-spacing:.1em;text-transform:uppercase">Nothing is recorded, ever</div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isCalibrating }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:rgba(32,30,29,.72);color:var(--color-bg)">
+            <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.75">Hold your best posture</div>
+            <div style="font-family:var(--font-heading);font-size:112px;line-height:1;font-weight:600">{{ calibNum }}</div>
+          </div>
+        </sc-if>
+
+        <div style="position:absolute;right:14px;top:14px;display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-bg);opacity:.8">
+          <span style="width:7px;height:7px;border-radius:50%;background:var(--state);animation:bs-blink 1.8s infinite"></span>
+          <span>{{ feedLabel }}</span>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;margin-top:9px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-600)">
+        <span>{{ camNote }}</span>
+        <span>{{ rateNote }}</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:22px;padding-top:2px">
+      <div style="display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--color-neutral-700)">
+        <span style="width:8px;height:8px;border-radius:50%;background:var(--state)"></span>
+        <span>{{ kicker }}</span>
+      </div>
+
+      <div style="display:flex;align-items:flex-start;gap:18px;min-width:0">
+        <svg viewBox="0 0 48 72" width="46" height="69" fill="none" style="flex:none;margin-top:6px;color:var(--state);transition:color .5s ease" aria-hidden="true">
+          <path d="M6 68h36" stroke="currentColor" stroke-opacity=".28" stroke-width="2"></path>
+          <path d="{{ spinePath }}" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></path>
+          <circle cx="{{ headX }}" cy="{{ headY }}" r="8" stroke="currentColor" stroke-width="3.5" fill="currentColor" fill-opacity=".16"></circle>
+        </svg>
+        <h1 style="font-size:clamp(40px,5.2vw,78px);line-height:.94;letter-spacing:-.03em;margin:0;min-width:0;overflow-wrap:anywhere;hyphens:auto;color:var(--state);transition:color .5s ease;text-wrap:balance">{{ verdict }}</h1>
+      </div>
+
+      <p style="margin:0;font-size:19px;line-height:1.45;max-width:34ch;text-wrap:pretty">{{ guidance }}</p>
+      <p style="margin:0;font-size:14px;color:var(--color-neutral-700);font-style:italic">{{ verdictMeta }}</p>
+
+      <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:12px;align-items:flex-start;margin-top:6px">
+          <button onClick="{{ onStart }}" style="font-family:var(--font-heading);font-weight:600;font-size:19px;padding:15px 30px;border:none;border-radius:var(--radius-md);background:var(--color-accent);color:#fff;cursor:pointer;transition:background .18s" style-hover="background:var(--color-accent-600)" style-active="background:var(--color-accent-700)">Start watching my back</button>
+          <span style="font-size:13px;color:var(--color-neutral-700)">Takes three seconds to calibrate.</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;border-top:1px solid var(--color-divider);padding-top:18px;margin-top:4px">
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <span style="font-family:var(--font-heading);font-size:38px;line-height:1">{{ uptimeText }}</span>
+            <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700)">Upright</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <span style="font-family:var(--font-heading);font-size:38px;line-height:1">{{ slouchText }}</span>
+            <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700)">Slips</span>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px">
+            <span style="font-family:var(--font-heading);font-size:38px;line-height:1">{{ streakText }}</span>
+            <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700)">Best run</span>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ isLive }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:var(--gap)">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-neutral-700);margin-bottom:8px">
+        <span>The session so far</span>
+        <span>{{ sessionText }}</span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:2px;height:52px;border-bottom:1px solid var(--color-text)">
+        <sc-for list="{{ bars }}" as="bar" hint-placeholder-count="40">
+          <div style="{{ bar.style }}"></div>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:24px;margin-top:var(--gap);padding:16px 0 22px;border-top:1px solid var(--color-divider);opacity:.4;transition:opacity .22s" style-hover="opacity:1">
+    <span style="font-size:13px;color:var(--color-neutral-700)"><b style="font-weight:600;color:var(--color-text)">On-device by design.</b> Frames and landmarks never leave this browser.</span>
+    <div style="display:flex;gap:8px">
+      <button onClick="{{ onDemo }}" style="font-family:var(--font-body);font-size:13px;padding:8px 14px;border:1px solid var(--color-divider);background:transparent;color:var(--color-neutral-700);border-radius:var(--radius-md);cursor:pointer" style-hover="border-color:var(--color-text);color:var(--color-text)">{{ demoLabel }}</button>
+      <button onClick="{{ onRecal }}" style="font-family:var(--font-body);font-size:13px;padding:8px 14px;border:1px solid var(--color-divider);background:transparent;color:var(--color-neutral-700);border-radius:var(--radius-md);cursor:pointer" style-hover="border-color:var(--color-text);color:var(--color-text)">Recalibrate</button>
+      <button onClick="{{ onToggle }}" style="font-family:var(--font-body);font-size:13px;padding:8px 14px;border:1px solid var(--color-divider);background:transparent;color:var(--color-neutral-700);border-radius:var(--radius-md);cursor:pointer" style-hover="border-color:var(--color-text);color:var(--color-text)">{{ toggleLabel }}</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ showNudge }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;right:32px;bottom:32px;width:322px;background:var(--color-bg);box-shadow:var(--shadow-lg);border-radius:var(--radius-md);padding:20px 22px 18px;animation:bs-slip .3s ease both;z-index:20">
+      <div style="height:5px;background:var(--state);margin:-20px -22px 15px;border-radius:var(--radius-md) var(--radius-md) 0 0"></div>
+      <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--state);margin-bottom:5px">Stop press</div>
+      <div style="font-family:var(--font-heading);font-weight:600;font-size:27px;line-height:1.05;margin-bottom:7px">{{ nudgeTitle }}</div>
+      <p style="margin:0 0 14px;font-size:15px;color:var(--color-neutral-800)">{{ nudgeBody }}</p>
+      <button onClick="{{ onDismiss }}" style="font-family:var(--font-body);font-size:13px;padding:7px 14px;border:1px solid var(--color-divider);background:transparent;color:var(--color-neutral-700);border-radius:var(--radius-md);cursor:pointer" style-hover="border-color:var(--color-text);color:var(--color-text)">Give me a minute</button>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;statusPalette&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;press&quot;,&quot;traffic&quot;],&quot;default&quot;:&quot;press&quot;,&quot;tsType&quot;:&quot;'press' | 'traffic'&quot;,&quot;section&quot;:&quot;Status&quot;,&quot;label&quot;:&quot;Status colours&quot;},&quot;density&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;roomy&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;roomy&quot;,&quot;tsType&quot;:&quot;'roomy' | 'compact'&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;layout&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;split&quot;,&quot;stacked&quot;],&quot;default&quot;:&quot;split&quot;,&quot;tsType&quot;:&quot;'split' | 'stacked'&quot;,&quot;section&quot;:&quot;Layout&quot;},&quot;showGuides&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Layout&quot;,&quot;label&quot;:&quot;Tracking overlay&quot;}}">
+const PAL = {
+  press:   { good:'#0088b0', bad:'#d6006c', goodDeep:'#006786', badDeep:'#aa0b56', goodTint:'#cbeeff', badTint:'#ffdee6' },
+  traffic: { good:'#0f7a4a', bad:'#c8102e', goodDeep:'#0b5c38', badDeep:'#8f0b20', goodTint:'#d9ecdf', badTint:'#fadfe2' }
+};
+const GOOD_LINES = [
+  'Stacked and level. Your neck is doing nothing it will regret.',
+  'Shoulders open, chin over the collarbone. Carry on.',
+  'That is the reference posture, held.'
+];
+const BAD_LINES = [
+  'Your head has drifted forward. Slide back into the chair and let the screen come to you.',
+  'You are leaning in. Push the hips back, drop the shoulders, unclench the jaw.',
+  'The chin is dipping. Lift the sternum an inch and the rest follows.'
+];
+const NUDGES = [
+  ['Chin back.', 'Ten seconds of forward head. Ease the skull over the shoulders and breathe out.'],
+  ['Shoulders down.', 'They have crept toward your ears again. Let them fall on the exhale.'],
+  ['Sit back.', 'You have inched to the front of the seat. Find the backrest.']
+];
+
+class Component extends DCLogic {
+  state = {
+    phase: 'idle', posture: 'good', lean: 0.06,
+    sessionSec: 0, goodSec: 0, slouches: 0, run: 0, best: 0,
+    bars: [], nudge: null, calibNum: 3, camera: 'off', paused: false, demo: false
+  };
+  videoRef = React.createRef();
+
+  componentDidMount() {
+    this.applyVars(); this.acc = 0;
+    this.onResize = () => this.applyVars();
+    window.addEventListener('resize', this.onResize);
+  }
+  componentDidUpdate() { this.applyVars(); }
+  componentWillUnmount() { this.stopAll(); window.removeEventListener('resize', this.onResize); }
+
+  pal() { return PAL[this.props.statusPalette] || PAL.press; }
+
+  applyVars() {
+    const p = this.pal(), r = document.documentElement.style;
+    const live = this.state.phase === 'running' && !this.state.paused;
+    const bad = live && this.state.posture === 'bad';
+    if (this.state.phase === 'idle') {
+      r.setProperty('--state', '#7d7979'); r.setProperty('--state-deep', '#444141');
+    } else {
+      r.setProperty('--state', bad ? p.bad : p.good);
+      r.setProperty('--state-deep', bad ? p.badDeep : p.goodDeep);
+    }
+    const compact = this.props.density === 'compact';
+    r.setProperty('--pad', compact ? '28px' : '44px');
+    r.setProperty('--gap', compact ? '26px' : '44px');
+    const narrow = typeof window !== 'undefined' && window.innerWidth < 1100;
+    r.setProperty('--grid', (this.props.layout === 'stacked' || narrow)
+      ? 'minmax(0,1fr)' : 'minmax(0,1.35fr) minmax(420px,0.65fr)');
+    r.setProperty('--tilt', (this.state.lean * 13).toFixed(2) + 'deg');
+    r.setProperty('--bob', (this.state.lean * 16).toFixed(1) + 'px');
+  }
+
+  stopAll() {
+    clearInterval(this.timer); clearInterval(this.calibTimer);
+    if (this.stream) { this.stream.getTracks().forEach(t => t.stop()); this.stream = null; }
+  }
+
+  async openCamera() {
+    try {
+      this.stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 960 } });
+      if (this.videoRef.current) this.videoRef.current.srcObject = this.stream;
+      this.setState({ camera: 'on' });
+    } catch (e) { this.setState({ camera: 'denied' }); }
+  }
+
+  beginCalibration = () => {
+    clearInterval(this.calibTimer);
+    this.setState({ phase: 'calibrating', calibNum: 3 });
+    this.openCamera();
+    this.calibTimer = setInterval(() => {
+      const n = this.state.calibNum - 1;
+      if (n <= 0) { clearInterval(this.calibTimer); this.startRun(); }
+      else this.setState({ calibNum: n });
+    }, 900);
+  };
+
+  startRun() {
+    this.setState({ phase: 'running', paused: false, posture: 'good', lean: 0.05,
+      sessionSec: 0, goodSec: 0, slouches: 0, run: 0, best: 0, bars: [], nudge: null });
+    clearInterval(this.timer);
+    this.acc = 0;
+    this.timer = setInterval(this.tick, 500);
+  }
+
+  tick = () => {
+    const s = this.state;
+    if (s.paused) return;
+    let lean = s.demo ? 0.85 : s.lean + (Math.random() - 0.47) * 0.17;
+    if (!s.demo && Math.random() < 0.035) lean += 0.45;
+    lean = Math.max(-0.25, Math.min(1, lean));
+    const bad = lean > 0.42;
+    const posture = bad ? 'bad' : 'good';
+    const sessionSec = s.sessionSec + 0.5;
+    const goodSec = s.goodSec + (bad ? 0 : 0.5);
+    const run = bad ? 0 : s.run + 0.5;
+    const badRun = bad ? (s.badRun || 0) + 0.5 : 0;
+    const slouches = bad && s.posture === 'good' ? s.slouches + 1 : s.slouches;
+    let nudge = s.nudge;
+    if (!bad) nudge = null;
+    else if (!nudge && badRun >= 5) nudge = NUDGES[slouches % NUDGES.length];
+
+    this.acc += 0.5;
+    let bars = s.bars;
+    if (this.acc >= 2) {
+      this.acc = 0;
+      bars = s.bars.concat([{ bad, h: Math.round(14 + (1 - Math.min(lean, 1)) * 36) }]).slice(-72);
+    }
+    this.badRunV = badRun;
+    this.setState({ lean, posture, sessionSec, goodSec, run, best: Math.max(s.best, run), slouches, nudge, bars, badRun });
+  };
+
+  onToggle = () => {
+    if (this.state.phase === 'idle') return this.beginCalibration();
+    if (this.state.paused) { this.setState({ paused: false }); return; }
+    this.setState({ paused: true, nudge: null });
+  };
+  onRecal = () => this.beginCalibration();
+  onDemo = () => this.setState({ demo: !this.state.demo });
+  onDismiss = () => this.setState({ nudge: null, badRun: -25 });
+
+  fmt(sec) {
+    const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+    return m > 0 ? m + ' min ' + s + 's' : s + 's';
+  }
+
+  renderVals() {
+    const st = this.state, p = this.pal();
+    const idle = st.phase === 'idle', calib = st.phase === 'calibrating';
+    const live = st.phase === 'running';
+    const bad = live && !st.paused && st.posture === 'bad';
+    const now = new Date();
+    const dateline = now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }).toUpperCase();
+
+    let verdict = 'Ready.', guidance = 'Start the camera and I will hold you to the posture you calibrate. One line, one colour, no dashboard.', meta = 'Nothing has been watched yet.';
+    if (calib) { verdict = 'Hold it…'; guidance = 'Sit the way you want to be reminded of. This becomes the reference.'; meta = 'Calibrating from your own posture, not an average.'; }
+    else if (live && st.paused) { verdict = 'Paused.'; guidance = 'The camera is still yours. Nothing is being read.'; meta = 'Resume whenever you like.'; }
+    else if (live && bad) { verdict = 'Slouching.'; guidance = BAD_LINES[st.slouches % BAD_LINES.length]; meta = 'Out of position for ' + this.fmt(st.badRun || 0.5) + '.'; }
+    else if (live) { verdict = 'Upright.'; guidance = GOOD_LINES[Math.floor(st.sessionSec / 47) % GOOD_LINES.length]; meta = 'Held for ' + this.fmt(st.run) + '.'; }
+
+    const lean = st.phase === 'idle' ? 0.1 : st.lean;
+    const dx = Math.max(0, lean) * 11;
+    const spinePath = bad
+      ? 'M22 62 C 24 48, 30 40, ' + (30 + dx) + ' 28'
+      : 'M23 62 C 23 48, 23 38, 23 28';
+    const headX = bad ? 32 + dx : 23;
+    const headY = bad ? 21 : 18;
+
+    const uptime = st.sessionSec > 0 ? Math.round((st.goodSec / st.sessionSec) * 100) : 100;
+
+    return {
+      videoRef: this.videoRef,
+      dateline, sessionNo: '014',
+      isIdle: idle, isCalibrating: calib, isLive: live,
+      guidesOn: (this.props.showGuides !== false) && !idle,
+      calibNum: st.calibNum,
+      verdict, guidance, verdictMeta: meta,
+      spinePath, headX, headY,
+      kicker: idle ? 'Standing by' : (st.paused ? 'Paused' : 'Live monitor'),
+      feedLabel: idle ? 'Off' : (st.camera === 'denied' ? 'No camera' : 'Live'),
+      camNote: st.camera === 'denied' ? 'Camera blocked — showing the tracking layer only' : 'Front camera · mirrored',
+      rateNote: live && !st.paused ? '2 reads / second' : 'Idle',
+      uptimeText: uptime + '%',
+      slouchText: String(st.slouches),
+      streakText: this.fmt(st.best),
+      sessionText: this.fmt(st.sessionSec),
+      bars: st.bars.map((b, i) => ({
+        key: i,
+        style: { flex: '1 1 0', minWidth: '2px', height: b.h + 'px',
+          background: b.bad ? p.bad : p.good, opacity: b.bad ? 1 : 0.55 }
+      })),
+      showNudge: !!st.nudge && !st.paused,
+      nudgeTitle: st.nudge ? st.nudge[0] : '',
+      nudgeBody: st.nudge ? st.nudge[1] : '',
+      demoLabel: st.demo ? 'Demo: force slouch ON' : 'Demo: force slouch',
+      toggleLabel: idle ? 'Start' : (st.paused ? 'Resume' : 'Pause'),
+      onStart: this.beginCalibration, onToggle: this.onToggle,
+      onRecal: this.onRecal, onDemo: this.onDemo, onDismiss: this.onDismiss
+    };
+  }
+}
+
+</script>
+</body>
+</html>
