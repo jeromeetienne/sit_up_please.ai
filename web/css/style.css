@@ -334,8 +334,16 @@ button {
 	transition: color 0.5s ease;
 }
 
+/*
+ * The guidance sentence swaps for a different one on nearly every state and
+ * posture change, and the swapped-in text ranges from one line ("That is the
+ * reference posture, held.") to three ("The browser did not grant camera
+ * access..."). A reserved 3-line height keeps everything below it — the meta
+ * line, the divider, the stats grid — from jumping position on every change.
+ */
 .guidance {
 	margin: 0;
+	min-height: 4.35em;
 	max-width: 34ch;
 	font-size: 19px;
 	line-height: 1.45;
@@ -550,6 +558,7 @@ button {
 .ghost-button {
 	display: inline-flex;
 	align-items: center;
+	justify-content: center;
 	gap: 7px;
 	padding: 8px 14px;
 	border: 1px solid var(--color-divider);
@@ -559,6 +568,27 @@ button {
 	font-size: 13px;
 	color: var(--color-neutral-700);
 	cursor: pointer;
+}
+
+/*
+ * Each of these three buttons swaps its own label depending on state
+ * ("Start" / "Pause" / "Resume", "Landmarks: on" / "off", "Desktop alerts:
+ * on" / "off"). Without a reserved width, the button itself resizes on every
+ * click, and — because the footer packs its buttons right-aligned — every
+ * other button in the row visibly slides sideways with it. Widths below are
+ * the longest label in each button's own set, measured directly, plus a
+ * small buffer for cross-browser font rendering.
+ */
+#toggle-monitoring {
+	min-width: 104px;
+}
+
+#toggle-landmarks {
+	min-width: 148px;
+}
+
+#toggle-alerts {
+	min-width: 166px;
 }
 
 .ghost-button i {
