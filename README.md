@@ -43,11 +43,19 @@ npm run build
 
 The build performs strict TypeScript checking and creates a production bundle in `dist/`.
 
+## Interface
+
+The interface is plain [Bootstrap](https://getbootstrap.com/) 5. The navigation bar, the cards, the buttons, the alert that carries the posture verdict, the stacked progress bar that carries the session history and the settings modal are all Bootstrap components with their own appearance, and the layout is the Bootstrap grid.
+
+The whole stylesheet is `web/css/style.scss`: it imports Bootstrap and adds three rules, which are the ones Bootstrap has no class for. There are no design tokens, no palette and no typeface of this project's own, so the page can be changed by swapping Bootstrap classes in `web/index.html` rather than by writing style rules.
+
+Colour that carries meaning uses the Bootstrap contextual colours: `success` while the calibrated posture is held, `danger` while it is lost, `secondary` while it is unknown.
+
 ## Pomodoro timer
 
 The pomodoro timer runs on the same page as the posture monitor. It counts a work period, then a short break, and a long break instead of the short one once the set number of work periods is finished. The timer keeps counting whether or not posture monitoring is reading the camera.
 
-Select **Pomodoro** in the footer to start the cycle. The same button stops the timer while a period is counting down, and starts the next period when one has finished and automatic start is switched off. The period name, the time left and one status line appear above the session figures.
+Switch **Run the pomodoro timer** on in the settings panel to start the cycle, and off to stop it. When a period has finished and automatic start is switched off, a **Start next period** button appears beside the countdown. The period name, the time left and one status line appear above the session figures.
 
 **Notification when a period finishes**
 
@@ -55,11 +63,11 @@ Select **Pomodoro** in the footer to start the cycle. The same button stops the 
 - A desktop notification names the period that has just finished and says what comes next, with its length. It carries a notification tag of its own, so a finished period and a posture reminder never replace one another on the screen.
 - A tone plays: a falling two-note tone at the end of a work period, and a rising one at the end of a break. Neither tone repeats or grows stronger, because a period ending is one event rather than a condition that continues. A posture alert already sounding is closed first, without the reward chime.
 
-Desktop notifications for the pomodoro timer follow the same **Desktop alerts** setting in the footer as the posture reminder.
+Desktop notifications for the pomodoro timer follow the same **Show a desktop notification for a sustained slouch** setting in the settings panel as the posture reminder.
 
 **Parameters**
 
-Select **Settings** in the footer to edit them. They are stored in this browser and are read again on the next visit.
+Select **Settings** in the navigation bar to edit them. They are stored in this browser and are read again on the next visit.
 
 | Parameter | Default |
 | --- | --- |
@@ -74,13 +82,21 @@ A period already counting down keeps the length it started with, so a change nev
 
 While **Pause posture monitoring during a break** is on, the page reads **On a break.** for the length of every break, no posture reading is taken, and no slip is counted. A break means leaving the chair, so a slouch reminder and a lost face would both fire for no reason.
 
+## Light theme and dark theme
+
+The page follows the light theme or the dark theme of the operating system on its own. Select **Theme** in the navigation bar to force one of the two instead: one press moves from the operating system setting to the light theme, the next to the dark theme, and the next back to the operating system setting.
+
+A forced theme is stored in this browser and is remembered for six hours. Once those six hours have passed the forced theme is forgotten and the page follows the operating system again, whether the page was closed in the meantime or has stayed open the whole time.
+
+Both themes are Bootstrap's own. The theme in force is written to the root element as the Bootstrap `data-bs-theme` attribute, and Bootstrap knows only the light theme and the dark theme, so the operating system setting is read from `prefers-color-scheme` and written as one of the two. A change to the operating system setting while the page is open is followed straight away.
+
 ## Progressive web application support
 
 The application ships a web app manifest and a service worker, so it can be installed like a native application and can start without a network connection after a first visit.
 
 **Installing the application**
 
-- Chrome and Edge on desktop and Android show an install button in the application's own footer once the browser decides the page is installable, and also offer installation from the browser's own address-bar or menu install control.
+- Chrome and Edge on desktop and Android show an install button in the application's own navigation bar once the browser decides the page is installable, and also offer installation from the browser's own address-bar or menu install control.
 - Safari on iOS and iPadOS does not support the automatic install button. Install manually from the Share menu with **Add to Home Screen**.
 - Safari on macOS does not support the automatic install button either. Install manually from the File menu with **Add to Dock**.
 - Firefox does not currently offer installation for this kind of application, on either desktop or Android.

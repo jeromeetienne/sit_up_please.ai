@@ -33,13 +33,6 @@ export class PomodoroCopy {
 		return 'Posture monitoring is on hold until the break ends.';
 	}
 
-	/** Returns the label of the pomodoro button in the footer. */
-	static toggleLabel(runState: PomodoroRunState): string {
-		if (runState === 'off') return 'Pomodoro: off';
-		if (runState === 'awaiting-start') return 'Start next period';
-		return 'Pomodoro: on';
-	}
-
 	/**
 	 * Returns the desktop notification content for a finished period: the
 	 * period that has just ended in the title, and what comes next, with its

@@ -101,7 +101,8 @@ export class PomodoroTimer {
 			periodLabel: PomodoroCopy.periodLabel(this._periodKind, workPeriodNumber, this._settings.workPeriodsBeforeLongBreak),
 			countdownText: PomodoroCopy.formatCountdown(this._remainingSec),
 			statusText: PomodoroCopy.statusText(this._runState, this._periodKind),
-			toggleLabel: PomodoroCopy.toggleLabel(this._runState),
+			isOn: this._runState !== 'off',
+			isAwaitingStart: this._runState === 'awaiting-start',
 		};
 	}
 

@@ -1,0 +1,26 @@
+/*
+ * "Sit Up, Please" — the whole stylesheet.
+ *
+ * Bootstrap draws the page. What is left here is only what Bootstrap has no
+ * class for, and nothing may be added that a Bootstrap class already does.
+ */
+
+@import 'bootstrap/scss/bootstrap';
+
+/* The hidden attribute must beat a Bootstrap display class, which is written
+   later in the stylesheet and carries the same weight. */
+[hidden] {
+	display: none !important;
+}
+
+/* The camera picture fills its frame and is mirrored, as a person expects of a
+   self view. The landmark overlay is mirrored in its drawing code instead, so
+   that it is not mirrored twice. */
+#camera,
+#landmark-overlay {
+	object-fit: cover;
+}
+
+#camera {
+	transform: scaleX(-1);
+}

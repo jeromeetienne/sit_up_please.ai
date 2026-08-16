@@ -1,4 +1,5 @@
-import type { MonitorViewModel, SessionBar } from './monitor_types';
+import type { MonitorViewModel, SessionBar, StateColour } from './monitor_types';
+import type { ThemeChoice } from '../theme/theme_preference';
 import { MonitorCopy } from './monitor_copy';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -10,6 +11,13 @@ import { MonitorCopy } from './monitor_copy';
 const SESSION_NUMBER_STORAGE_KEY = 'sit-up-please.session-number.v1';
 const SESSION_NUMBER_LIMIT = 999;
 
+/** The Bootstrap contextual colour each posture state is drawn in. */
+const STATE_CONTEXTUAL_COLOUR: Record<StateColour, string> = {
+	good: 'success',
+	bad: 'danger',
+	unknown: 'secondary',
+};
+
 /** The buttons the person can press on the monitor screen. */
 export type MonitorActions = {
 	onStart: () => void;
@@ -19,6 +27,7 @@ export type MonitorActions = {
 	onOpenSettings: () => void;
 	onToggleAlerts: () => void;
 	onToggleLandmarks: () => void;
+	onCycleTheme: () => void;
 	onInstall: () => void;
 };
 
@@ -39,6 +48,7 @@ export class MonitorView {
 	private readonly _rateNote = MonitorView._require<HTMLElement>('rate-note');
 	private readonly _kickerLabel = MonitorView._require<HTMLElement>('kicker-label');
 	private readonly _verdict = MonitorView._require<HTMLElement>('verdict');
+	private readonly _verdictAlert = MonitorView._require<HTMLElement>('verdict-alert');
 	private readonly _guidance = MonitorView._require<HTMLElement>('guidance');
 	private readonly _verdictMeta = MonitorView._require<HTMLElement>('verdict-meta');
 	private readonly _postureSpine = MonitorView._require<SVGPathElement>('posture-spine');
@@ -57,15 +67,13 @@ export class MonitorView {
 	private readonly _sessionElapsed = MonitorView._require<HTMLElement>('session-elapsed');
 	private readonly _ribbonBars = MonitorView._require<HTMLElement>('ribbon-bars');
 	private readonly _installButton = MonitorView._require<HTMLButtonElement>('install-app');
-	private readonly _landmarksButton = MonitorView._require<HTMLButtonElement>('toggle-landmarks');
-	private readonly _landmarksIcon = MonitorView._require<HTMLElement>('toggle-landmarks-icon');
-	private readonly _landmarksLabel = MonitorView._require<HTMLElement>('toggle-landmarks-label');
-	private readonly _alertsButton = MonitorView._require<HTMLButtonElement>('toggle-alerts');
-	private readonly _alertsIcon = MonitorView._require<HTMLElement>('toggle-alerts-icon');
-	private readonly _alertsLabel = MonitorView._require<HTMLElement>('toggle-alerts-label');
+	private readonly _landmarksSwitch = MonitorView._require<HTMLInputElement>('toggle-landmarks');
+	private readonly _alertsSwitch = MonitorView._require<HTMLInputElement>('toggle-alerts');
+	private readonly _themeButton = MonitorView._require<HTMLButtonElement>('toggle-theme');
+	private readonly _themeIcon = MonitorView._require<HTMLElement>('toggle-theme-icon');
 	private readonly _settingsButton = MonitorView._require<HTMLButtonElement>('open-settings');
-	private readonly _pomodoroButton = MonitorView._require<HTMLButtonElement>('toggle-pomodoro');
-	private readonly _pomodoroButtonLabel = MonitorView._require<HTMLElement>('toggle-pomodoro-label');
+	private readonly _pomodoroSwitch = MonitorView._require<HTMLInputElement>('toggle-pomodoro');
+	private readonly _pomodoroStartNextButton = MonitorView._require<HTMLButtonElement>('pomodoro-start-next');
 	private readonly _recalibrateButton = MonitorView._require<HTMLButtonElement>('recalibrate');
 	private readonly _monitoringButton = MonitorView._require<HTMLButtonElement>('toggle-monitoring');
 	private readonly _monitoringIcon = MonitorView._require<HTMLElement>('toggle-monitoring-icon');
@@ -85,18 +93,19 @@ export class MonitorView {
 		this._startButton.addEventListener('click', actions.onStart);
 		this._recalibrateButton.addEventListener('click', actions.onRecalibrate);
 		this._monitoringButton.addEventListener('click', actions.onToggleMonitoring);
-		this._pomodoroButton.addEventListener('click', actions.onTogglePomodoro);
+		this._pomodoroSwitch.addEventListener('change', actions.onTogglePomodoro);
+		this._pomodoroStartNextButton.addEventListener('click', actions.onTogglePomodoro);
 		this._settingsButton.addEventListener('click', actions.onOpenSettings);
-		this._alertsButton.addEventListener('click', actions.onToggleAlerts);
-		this._landmarksButton.addEventListener('click', actions.onToggleLandmarks);
+		this._alertsSwitch.addEventListener('change', actions.onToggleAlerts);
+		this._landmarksSwitch.addEventListener('change', actions.onToggleLandmarks);
+		this._themeButton.addEventListener('click', actions.onCycleTheme);
 		this._installButton.addEventListener('click', actions.onInstall);
 	}
 
-	/** Turns the desktop alert button on, and labels its current setting. */
+	/** Turns the desktop alert switch of the settings panel on, and sets its position. */
 	setAlertsState(isSupported: boolean, isEnabled: boolean): void {
-		this._alertsButton.disabled = isSupported === false;
-		this._alertsIcon.className = isEnabled ? 'bi bi-bell' : 'bi bi-bell-slash';
-		this._alertsLabel.textContent = isEnabled ? 'Desktop alerts: on' : 'Desktop alerts: off';
+		this._alertsSwitch.disabled = isSupported === false;
+		this._alertsSwitch.checked = isEnabled;
 	}
 
 	/** Shows or hides the install button, following the browser's own install-prompt availability. */
@@ -104,15 +113,33 @@ export class MonitorView {
 		this._installButton.hidden = isAvailable === false;
 	}
 
-	/** Labels the landmark-overlay button with its current setting. */
+	/** Puts the landmark-overlay switch of the settings panel in its current position. */
 	setLandmarksState(isEnabled: boolean): void {
-		this._landmarksIcon.className = isEnabled ? 'bi bi-eye' : 'bi bi-eye-slash';
-		this._landmarksLabel.textContent = isEnabled ? 'Landmarks: on' : 'Landmarks: off';
+		this._landmarksSwitch.checked = isEnabled;
+	}
+
+	/** Labels the theme button with the theme setting in force. */
+	setThemeState(choice: ThemeChoice): void {
+		const iconByChoice: Record<ThemeChoice, string> = {
+			system: 'bi bi-circle-half',
+			light: 'bi bi-sun',
+			dark: 'bi bi-moon-stars',
+		};
+		const labelByChoice: Record<ThemeChoice, string> = {
+			system: 'Theme: system',
+			light: 'Theme: light',
+			dark: 'Theme: dark',
+		};
+		// The button carries an icon and no words, so its name is written where a
+		// person and a screen reader can each still reach it.
+		this._themeIcon.className = iconByChoice[choice];
+		this._themeButton.title = labelByChoice[choice];
+		this._themeButton.setAttribute('aria-label', labelByChoice[choice]);
 	}
 
 	/** Draws the whole screen from one set of values. */
 	render(viewModel: MonitorViewModel): void {
-		this._applyStateVariables(viewModel);
+		this._applyStateColour(viewModel);
 
 		this._platePlaceholder.hidden = viewModel.isIdle === false;
 		this._calibrationOverlay.hidden = viewModel.isCalibrating === false;
@@ -134,7 +161,8 @@ export class MonitorView {
 		this._pomodoroLabel.textContent = viewModel.pomodoro.periodLabel;
 		this._pomodoroCountdown.textContent = viewModel.pomodoro.countdownText;
 		this._pomodoroStatus.textContent = viewModel.pomodoro.statusText;
-		this._pomodoroButtonLabel.textContent = viewModel.pomodoro.toggleLabel;
+		this._pomodoroSwitch.checked = viewModel.pomodoro.isOn;
+		this._pomodoroStartNextButton.hidden = viewModel.pomodoro.isAwaitingStart === false;
 
 		this._startBlock.hidden = viewModel.isIdle === false;
 		this._figures.hidden = viewModel.isLive === false;
@@ -148,6 +176,7 @@ export class MonitorView {
 
 		this._monitoringIcon.className = viewModel.monitoringToggleLabel === 'Pause' ? 'bi bi-pause-fill' : 'bi bi-play-fill';
 		this._monitoringLabel.textContent = viewModel.monitoringToggleLabel;
+		this._monitoringButton.title = viewModel.monitoringToggleLabel;
 		this._announce(viewModel);
 	}
 
@@ -157,24 +186,34 @@ export class MonitorView {
 	///////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////
 
-	/** Writes the posture colour every part of the page reads. */
-	private _applyStateVariables(viewModel: MonitorViewModel): void {
-		const rootStyle = document.documentElement.style;
-		rootStyle.setProperty('--state', `var(--state-${viewModel.stateColour})`);
-		rootStyle.setProperty('--state-deep', `var(--state-${viewModel.stateColour}-deep)`);
+	/** Writes the posture state as the Bootstrap contextual colour of the verdict. */
+	private _applyStateColour(viewModel: MonitorViewModel): void {
+		const contextualColour = STATE_CONTEXTUAL_COLOUR[viewModel.stateColour];
+		this._verdictAlert.className = `alert alert-${contextualColour} d-flex align-items-center gap-3`;
 	}
 
-	/** Redraws the session ribbon, but only when a new bar has been added. */
+	/**
+	 * Redraws the session ribbon, but only when a new bar has been added. The
+	 * ribbon is a Bootstrap stacked progress bar: one segment for every two
+	 * seconds of the session, green while the posture held and red while it did
+	 * not, each segment taking an equal share of the width.
+	 */
 	private _renderRibbon(bars: SessionBar[]): void {
 		if (this._renderedBars === bars) return;
 		this._renderedBars = bars;
 
+		const segmentWidthPercent = bars.length === 0 ? 0 : 100 / bars.length;
 		const fragment = document.createDocumentFragment();
 		for (const bar of bars) {
-			const element = document.createElement('div');
-			element.className = bar.isBad ? 'ribbon-bar ribbon-bar-bad' : 'ribbon-bar';
-			element.style.height = `${bar.heightPx}px`;
-			fragment.append(element);
+			const segment = document.createElement('div');
+			segment.className = 'progress';
+			segment.setAttribute('role', 'progressbar');
+			segment.style.width = `${segmentWidthPercent}%`;
+
+			const fill = document.createElement('div');
+			fill.className = bar.isBad ? 'progress-bar bg-danger' : 'progress-bar bg-success';
+			segment.append(fill);
+			fragment.append(segment);
 		}
 		this._ribbonBars.replaceChildren(fragment);
 	}
@@ -194,7 +233,7 @@ export class MonitorView {
 	}
 
 	/**
-	 * Returns the edition number printed in the masthead: how many times this
+	 * Returns the session number shown in the navigation bar: how many times this
 	 * browser has opened the monitor, counted locally and shown as three digits.
 	 */
 	private static _nextSessionNumber(): string {

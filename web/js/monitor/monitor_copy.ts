@@ -55,7 +55,7 @@ export class MonitorCopy {
 	/** How many session seconds pass before the upright guidance line changes. */
 	static readonly GOOD_LINE_INTERVAL_SEC = 47;
 
-	/** Returns the masthead date, for example `SUN 26 JUL`. */
+	/** Returns the date shown in the navigation bar, for example `SUN 26 JUL`. */
 	static dateline(date: Date): string {
 		const formatted = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
 		return formatted.toUpperCase();
