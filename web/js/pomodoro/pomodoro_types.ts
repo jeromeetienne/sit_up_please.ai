@@ -29,6 +29,8 @@ export type PomodoroViewModel = {
 	countdownText: string;
 	/** One short line saying what the timer is doing right now. */
 	statusText: string;
-	/** The label of the pomodoro button in the footer. */
-	toggleLabel: string;
+	/** Whether the timer is switched on at all, whatever it is doing. */
+	isOn: boolean;
+	/** Whether a period has finished and the next one is waiting to be started by hand. */
+	isAwaitingStart: boolean;
 };

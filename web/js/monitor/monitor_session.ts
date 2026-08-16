@@ -21,8 +21,6 @@ const CALIBRATION_START_COUNT = 3;
 const ALERT_DELAY_SEC = 5;
 const RIBBON_BAR_SECONDS = 2;
 const RIBBON_BAR_LIMIT = 72;
-const RIBBON_BAR_MIN_HEIGHT_PX = 14;
-const RIBBON_BAR_RANGE_PX = 36;
 
 /** What the session tells the rest of the application when something changes. */
 export type MonitorSessionCallbacks = {
@@ -231,7 +229,7 @@ export class MonitorSession {
 		this._posture = isBad ? 'bad' : 'good';
 
 		this._updateAlert(isBad);
-		this._appendRibbonBar(isBad, reading.lean);
+		this._appendRibbonBar(isBad);
 		this.publish();
 	}
 
@@ -261,15 +259,13 @@ export class MonitorSession {
 		this._callbacks.onAlertCleared();
 	}
 
-	/** Adds one ribbon bar for every two seconds of the session. */
-	private _appendRibbonBar(isBad: boolean, lean: number): void {
+	/** Adds one ribbon segment for every two seconds of the session. */
+	private _appendRibbonBar(isBad: boolean): void {
 		this._secondsSinceLastBar += TICK_SECONDS;
 		if (this._secondsSinceLastBar < RIBBON_BAR_SECONDS) return;
 
 		this._secondsSinceLastBar = 0;
-		const uprightShare = 1 - Math.min(Math.max(lean, 0), 1);
-		const heightPx = Math.round(RIBBON_BAR_MIN_HEIGHT_PX + uprightShare * RIBBON_BAR_RANGE_PX);
-		this._bars = this._bars.concat([{ isBad, heightPx }]).slice(-RIBBON_BAR_LIMIT);
+		this._bars = this._bars.concat([{ isBad }]).slice(-RIBBON_BAR_LIMIT);
 	}
 
 	///////////////////////////////////////////////////////////////////////////////

@@ -30,8 +30,9 @@ type StoredThemeChoice = {
  * is forgotten and the page follows the operating system again, whether the
  * page was closed in the meantime or has stayed open the whole time.
  *
- * The forced theme reaches the stylesheet as a data-theme attribute on the root
- * element, which narrows the colour scheme declared in `web/css/tokens.css`.
+ * The forced theme reaches the stylesheet as the Bootstrap data-bs-theme
+ * attribute on the root element, which narrows the colour scheme declared in
+ * `web/css/tokens.scss` and switches the Bootstrap parts of the page with it.
  */
 export class ThemePreference {
 	/** The setting in force right now. */
@@ -52,6 +53,13 @@ export class ThemePreference {
 		this._choice = loaded.choice;
 		this._savedAtMsec = loaded.savedAtMsec;
 		this._apply();
+
+		// The operating system setting is read once and written to the page, so a
+		// change to it while the page is open has to be followed by hand.
+		ThemePreference._systemQuery().addEventListener('change', () => {
+			if (this._choice !== 'system') return;
+			this._apply();
+		});
 	}
 
 	/** The setting in force right now. */
@@ -106,12 +114,10 @@ export class ThemePreference {
 	 * arms the timer that forgets a forced theme, and reports the setting.
 	 */
 	private _apply(): void {
+		// Bootstrap only knows the light theme and the dark theme, so the
+		// operating system setting is read here and written as one of the two.
 		const rootElement = document.documentElement;
-		if (this._choice === 'system') {
-			rootElement.removeAttribute('data-theme');
-		} else {
-			rootElement.setAttribute('data-theme', this._choice);
-		}
+		rootElement.setAttribute('data-bs-theme', this._choice === 'system' ? ThemePreference._systemTheme() : this._choice);
 
 		ThemePreference._paintBrowserInterface();
 		this._armForgetTimer();
@@ -137,6 +143,16 @@ export class ThemePreference {
 			this._forgetTimer = undefined;
 			this.set('system');
 		}, remainingMsec);
+	}
+
+	/** The media query that reports the dark theme of the operating system. */
+	private static _systemQuery(): MediaQueryList {
+		return window.matchMedia('(prefers-color-scheme: dark)');
+	}
+
+	/** The theme the operating system is asking for right now. */
+	private static _systemTheme(): 'light' | 'dark' {
+		return ThemePreference._systemQuery().matches ? 'dark' : 'light';
 	}
 
 	/**

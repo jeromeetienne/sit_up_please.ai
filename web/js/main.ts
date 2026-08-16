@@ -1,7 +1,5 @@
-import '@fontsource-variable/source-serif-4';
-import '@fontsource-variable/source-serif-4/wght-italic.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import '../css/style.css';
+import '../css/style.scss';
 
 import { InstallPrompt } from './pwa/install_prompt';
 import { MonitorSession } from './monitor/monitor_session';

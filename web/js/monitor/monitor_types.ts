@@ -51,8 +51,8 @@ export type PostureState = 'good' | 'bad';
 /** Which colour the whole page is currently carrying. */
 export type StateColour = 'unknown' | 'good' | 'bad';
 
-/** One bar of the session ribbon, covering two seconds of the session. */
-export type SessionBar = { isBad: boolean; heightPx: number };
+/** One segment of the session ribbon, covering two seconds of the session. */
+export type SessionBar = { isBad: boolean };
 
 /** The title and body of the desktop notification fired for a sustained bad posture. */
 export type PostureAlertContent = { title: string; body: string };

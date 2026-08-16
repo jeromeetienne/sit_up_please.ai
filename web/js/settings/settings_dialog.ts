@@ -1,3 +1,5 @@
+import Modal from 'bootstrap/js/dist/modal';
+
 import type { PomodoroSettingsValues } from '../pomodoro/pomodoro_settings';
 import { POMODORO_DEFAULT_SETTINGS, PomodoroSettings } from '../pomodoro/pomodoro_settings';
 
@@ -27,7 +29,7 @@ export type SettingsDialogCallbacks = {
  */
 export class SettingsDialog {
 	private readonly _callbacks: SettingsDialogCallbacks;
-	private readonly _dialog = SettingsDialog._require<HTMLDialogElement>('settings-dialog');
+	private readonly _modal = new Modal(SettingsDialog._require<HTMLElement>('settings-dialog'));
 	private readonly _workPeriodInput = SettingsDialog._require<HTMLInputElement>('setting-work-period');
 	private readonly _shortBreakInput = SettingsDialog._require<HTMLInputElement>('setting-short-break');
 	private readonly _longBreakInput = SettingsDialog._require<HTMLInputElement>('setting-long-break');
@@ -41,14 +43,14 @@ export class SettingsDialog {
 	constructor(callbacks: SettingsDialogCallbacks) {
 		this._callbacks = callbacks;
 		this._restoreDefaultsButton.addEventListener('click', () => this._fillFields(POMODORO_DEFAULT_SETTINGS));
-		this._cancelButton.addEventListener('click', () => this._dialog.close());
+		this._cancelButton.addEventListener('click', () => this._modal.hide());
 		this._saveButton.addEventListener('click', () => this._save());
 	}
 
 	/** Opens the panel, showing the settings as they are stored right now. */
 	open(): void {
 		this._fillFields(PomodoroSettings.load());
-		this._dialog.showModal();
+		this._modal.show();
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -100,7 +102,7 @@ export class SettingsDialog {
 
 		PomodoroSettings.save(settings);
 		this._callbacks.onSaved(settings);
-		this._dialog.close();
+		this._modal.hide();
 	}
 
 	/** Returns a whole number read from a field, held inside its range. */

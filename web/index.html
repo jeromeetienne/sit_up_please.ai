@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f3f2f2" />
+    <meta name="theme-color" content="#f8f9fa" />
     <title>Sit Up, Please</title>
 
     <link rel="manifest" href="./manifest.webmanifest" />
@@ -14,188 +14,233 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Sit Up, Please" />
   </head>
-  <body>
-    <div class="page">
-      <header class="masthead">
-        <div class="wordmark">Sit&nbsp;Up,&nbsp;Please</div>
-        <div class="masthead-meta">
-          <span>On-device only</span>
-          <span id="session-number">No.&nbsp;001</span>
-          <span id="dateline"></span>
+  <body class="d-flex flex-column min-vh-100 bg-body-tertiary">
+    <nav class="navbar bg-body border-bottom py-2">
+      <div class="container gap-2">
+        <span class="navbar-brand mb-0 me-0">Sit Up, Please</span>
+        <div class="d-flex flex-wrap gap-2">
+          <button id="install-app" class="btn btn-outline-secondary btn-sm" type="button" hidden>
+            <i class="bi bi-download" aria-hidden="true"></i>
+            Install app
+          </button>
+          <button id="recalibrate" class="btn btn-outline-secondary btn-sm" type="button">
+            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+            Recalibrate
+          </button>
+          <button id="toggle-monitoring" class="btn btn-outline-secondary btn-sm" type="button">
+            <i class="bi bi-play-fill" id="toggle-monitoring-icon" aria-hidden="true"></i>
+            <span id="toggle-monitoring-label">Start</span>
+          </button>
+          <a class="btn btn-outline-secondary btn-sm border-0" href="https://github.com/jeromeetienne/sit_up_please.ai" target="_blank" rel="noreferrer" aria-label="Sit Up, Please repository on GitHub" title="Sit Up, Please repository on GitHub">
+            <i class="bi bi-github" aria-hidden="true"></i>
+          </a>
+          <button id="toggle-theme" class="btn btn-outline-secondary btn-sm border-0" type="button" aria-label="Theme: system" title="Theme: system">
+            <i class="bi bi-circle-half" id="toggle-theme-icon" aria-hidden="true"></i>
+          </button>
+          <button id="open-settings" class="btn btn-outline-secondary btn-sm border-0" type="button" aria-label="Settings" title="Settings">
+            <i class="bi bi-gear-fill" aria-hidden="true"></i>
+          </button>
         </div>
-      </header>
+      </div>
+    </nav>
 
-      <main class="main-grid">
-        <section class="video-column" aria-label="Camera">
-          <div class="video-plate">
-            <video id="camera" autoplay muted playsinline aria-label="Camera preview"></video>
-            <canvas id="landmark-overlay" aria-hidden="true" hidden></canvas>
-            <div class="dot-screen" aria-hidden="true"></div>
-            <div class="state-spine" aria-hidden="true"></div>
-            <div class="plate-placeholder" id="plate-placeholder">
-              <p class="placeholder-title">Camera off</p>
-              <p class="placeholder-note">Nothing is recorded, ever</p>
+    <main class="container py-3">
+      <div class="row g-3">
+        <section class="col-lg-7" aria-label="Camera">
+          <div class="card">
+            <div class="ratio ratio-4x3 bg-dark rounded-top overflow-hidden">
+              <video id="camera" autoplay muted playsinline aria-label="Camera preview"></video>
+              <canvas id="landmark-overlay" aria-hidden="true" hidden></canvas>
+              <div id="plate-placeholder" class="d-flex flex-column justify-content-center align-items-center text-center text-white-50">
+                <p class="fs-3 mb-1">Camera off</p>
+                <p class="small mb-0">Nothing is recorded, ever</p>
+              </div>
+              <div id="calibration-overlay" class="d-flex flex-column justify-content-center align-items-center text-center text-white bg-dark bg-opacity-75" hidden>
+                <p class="text-uppercase small mb-1" id="calibration-kicker">Hold your best posture</p>
+                <p class="display-1 mb-0" id="calibration-count">3</p>
+              </div>
             </div>
-            <div class="calibration-overlay" id="calibration-overlay" hidden>
-              <p class="calibration-kicker" id="calibration-kicker">Hold your best posture</p>
-              <p class="calibration-count" id="calibration-count">3</p>
-            </div>
-            <div class="live-badge">
-              <span class="live-dot" aria-hidden="true"></span>
+            <span class="badge text-bg-secondary position-absolute top-0 end-0 m-2">
               <span id="feed-label">Off</span>
+            </span>
+            <div class="card-footer d-flex justify-content-between small text-body-secondary">
+              <span id="camera-note">Front camera · mirrored</span>
+              <span id="rate-note">Idle</span>
             </div>
-          </div>
-          <div class="caption-row">
-            <span id="camera-note">Front camera · mirrored</span>
-            <span id="rate-note">Idle</span>
           </div>
         </section>
 
-        <section class="verdict-column" aria-label="Posture">
-          <p class="kicker">
-            <span class="kicker-dot" aria-hidden="true"></span>
-            <span id="kicker-label">Standing by</span>
-          </p>
-
-          <div class="verdict-row">
-            <svg class="posture-figure" viewBox="0 0 48 72" width="46" height="69" fill="none" aria-hidden="true">
+        <section class="col-lg-5" aria-label="Posture">
+          <div class="alert alert-secondary d-flex align-items-center gap-3" id="verdict-alert" role="status">
+            <svg class="flex-shrink-0" viewBox="0 0 48 72" width="40" height="60" fill="none" aria-hidden="true">
               <path d="M6 68h36" stroke="currentColor" stroke-opacity=".28" stroke-width="2"></path>
               <path id="posture-spine" d="M23 62 C 23 48, 23 38, 23 28" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"></path>
               <circle id="posture-head" cx="23" cy="18" r="8" stroke="currentColor" stroke-width="3.5" fill="currentColor" fill-opacity=".16"></circle>
             </svg>
-            <h1 class="verdict" id="verdict">Ready.</h1>
+            <div>
+              <div class="text-uppercase small" id="kicker-label">Standing by</div>
+              <h1 class="alert-heading h2 mb-0" id="verdict">Ready.</h1>
+            </div>
           </div>
 
-          <p class="guidance" id="guidance">Start the camera and I will hold you to the posture you calibrate. One line, one colour, no dashboard.</p>
-          <p class="verdict-meta" id="verdict-meta">Nothing has been watched yet.</p>
+          <p id="guidance">Start the camera and I will hold you to the posture you calibrate. One line, one colour, no dashboard.</p>
+          <p class="text-body-secondary fst-italic" id="verdict-meta">Nothing has been watched yet.</p>
 
-          <div class="start-block" id="start-block">
-            <button id="start-monitoring" class="primary-button" type="button">
+          <div id="start-block">
+            <button id="start-monitoring" class="btn btn-primary" type="button">
               <i class="bi bi-camera-video" aria-hidden="true"></i>
-              <span>Start watching my back</span>
+              Start watching my back
             </button>
-            <span class="start-note">Takes three seconds to calibrate.</span>
+            <div class="form-text">Takes three seconds to calibrate.</div>
           </div>
 
-          <div class="pomodoro" id="pomodoro" aria-label="Pomodoro timer" hidden>
-            <div class="pomodoro-head">
-              <span id="pomodoro-label">Work period 1 of 4</span>
-              <span class="pomodoro-countdown" id="pomodoro-countdown">25:00</span>
+          <div class="card mt-3" id="pomodoro" aria-label="Pomodoro timer" hidden>
+            <div class="card-body d-flex justify-content-between align-items-center gap-3 py-2">
+              <div>
+                <div class="text-body-secondary small" id="pomodoro-label">Work period 1 of 4</div>
+                <div class="small" id="pomodoro-status"></div>
+              </div>
+              <div class="d-flex align-items-center gap-3">
+                <div class="fs-2" id="pomodoro-countdown">25:00</div>
+                <button id="pomodoro-start-next" class="btn btn-primary btn-sm" type="button" hidden>Start next period</button>
+              </div>
             </div>
-            <p class="pomodoro-status" id="pomodoro-status"></p>
           </div>
 
-          <div class="figures" id="figures" hidden>
-            <div class="figure">
-              <span class="figure-value" id="upright-value">100%</span>
-              <span class="figure-label">Upright</span>
+          <div class="row row-cols-3 g-2 mt-1" id="figures" hidden>
+            <div class="col">
+              <div class="card text-center h-100">
+                <div class="card-body p-2">
+                  <div class="fs-4" id="upright-value">100%</div>
+                  <div class="small text-body-secondary">Upright</div>
+                </div>
+              </div>
             </div>
-            <div class="figure">
-              <span class="figure-value" id="slips-value">0</span>
-              <span class="figure-label">Slips</span>
+            <div class="col">
+              <div class="card text-center h-100">
+                <div class="card-body p-2">
+                  <div class="fs-4" id="slips-value">0</div>
+                  <div class="small text-body-secondary">Slips</div>
+                </div>
+              </div>
             </div>
-            <div class="figure">
-              <span class="figure-value" id="best-run-value">0s</span>
-              <span class="figure-label">Best run</span>
+            <div class="col">
+              <div class="card text-center h-100">
+                <div class="card-body p-2">
+                  <div class="fs-4" id="best-run-value">0s</div>
+                  <div class="small text-body-secondary">Best run</div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
-      </main>
+      </div>
 
-      <section class="session-ribbon" id="session-ribbon" aria-label="Session history" hidden>
-        <div class="ribbon-header">
+      <section class="mt-3" id="session-ribbon" aria-label="Session history" hidden>
+        <div class="d-flex justify-content-between small text-body-secondary mb-1">
           <span>The session so far</span>
           <span id="session-elapsed">0s</span>
         </div>
-        <div class="ribbon-bars" id="ribbon-bars"></div>
+        <div class="progress-stacked" id="ribbon-bars"></div>
       </section>
+    </main>
 
-      <footer class="page-footer">
-        <span class="footer-note">
-          <b>On-device by design.</b> Frames and landmarks never leave this browser.
-          <span class="footer-credit">
-            Made with <i class="bi bi-heart-fill footer-heart" aria-hidden="true"></i><span class="visually-hidden">love</span> by
-            <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank" rel="noreferrer">Jerome Etienne</a>
-            <a class="footer-repository" href="https://github.com/jeromeetienne/sit_up_please.ai" target="_blank" rel="noreferrer" aria-label="Sit Up, Please repository on GitHub" title="Sit Up, Please repository on GitHub">
-              <i class="bi bi-github" aria-hidden="true"></i>
-            </a>
-          </span>
-        </span>
-        <div class="footer-actions">
-          <button id="install-app" class="ghost-button" type="button" hidden>
-            <i class="bi bi-download" aria-hidden="true"></i>
-            <span>Install app</span>
-          </button>
-          <button id="toggle-landmarks" class="ghost-button" type="button">
-            <i class="bi bi-eye" id="toggle-landmarks-icon" aria-hidden="true"></i>
-            <span id="toggle-landmarks-label">Landmarks: on</span>
-          </button>
-          <button id="toggle-alerts" class="ghost-button" type="button" disabled>
-            <i class="bi bi-bell" id="toggle-alerts-icon" aria-hidden="true"></i>
-            <span id="toggle-alerts-label">Desktop alerts: off</span>
-          </button>
-          <button id="toggle-theme" class="ghost-button" type="button">
-            <i class="bi bi-circle-half" id="toggle-theme-icon" aria-hidden="true"></i>
-            <span id="toggle-theme-label">Theme: system</span>
-          </button>
-          <button id="open-settings" class="ghost-button" type="button">
-            <i class="bi bi-sliders" aria-hidden="true"></i>
-            <span>Settings</span>
-          </button>
-          <button id="toggle-pomodoro" class="ghost-button" type="button">
-            <i class="bi bi-hourglass-split" id="toggle-pomodoro-icon" aria-hidden="true"></i>
-            <span id="toggle-pomodoro-label">Pomodoro: off</span>
-          </button>
-          <button id="recalibrate" class="ghost-button" type="button">
-            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-            <span>Recalibrate</span>
-          </button>
-          <button id="toggle-monitoring" class="ghost-button" type="button">
-            <i class="bi bi-play-fill" id="toggle-monitoring-icon" aria-hidden="true"></i>
-            <span id="toggle-monitoring-label">Start</span>
-          </button>
+    <footer class="mt-auto bg-body border-top py-2">
+      <div class="container d-flex flex-wrap justify-content-between align-items-center gap-2 small text-body-secondary">
+        <div>
+          <strong>On-device by design.</strong> Frames and landmarks never leave this browser.
+          Made with <i class="bi bi-heart-fill" aria-hidden="true"></i><span class="visually-hidden">love</span> by
+          <a href="https://www.linkedin.com/in/jeromeetienne/" target="_blank" rel="noreferrer">Jerome Etienne</a>
         </div>
-      <p id="live-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
+        <div>
+          On-device only
+          <span id="session-number" class="ms-2">No. 001</span>
+          <span id="dateline" class="ms-2"></span>
+        </div>
+      </div>
+    </footer>
+
+    <p id="live-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
+
+    <div class="modal fade" id="settings-dialog" tabindex="-1" aria-labelledby="settings-title" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="settings-title">Settings</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <h3 class="h5">Camera and alerts</h3>
+            <div class="form-check form-switch">
+              <input id="toggle-landmarks" class="form-check-input" type="checkbox" role="switch" checked />
+              <label for="toggle-landmarks" class="form-check-label">Draw the facial landmarks over the picture</label>
+            </div>
+            <div class="form-check form-switch">
+              <input id="toggle-alerts" class="form-check-input" type="checkbox" role="switch" disabled />
+              <label for="toggle-alerts" class="form-check-label">Show a desktop notification for a sustained slouch</label>
+            </div>
+
+            <hr class="my-4" />
+
+            <h3 class="h5">Pomodoro timer</h3>
+            <div class="form-check form-switch mb-3">
+              <input id="toggle-pomodoro" class="form-check-input" type="checkbox" role="switch" />
+              <label for="toggle-pomodoro" class="form-check-label">Run the pomodoro timer</label>
+            </div>
+            <div class="row mb-3 align-items-center">
+              <label for="setting-work-period" class="col-sm-8 col-form-label">Work period length</label>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-work-period" class="form-control" type="number" min="1" max="180" step="1" />
+                  <span class="input-group-text">min</span>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3 align-items-center">
+              <label for="setting-short-break" class="col-sm-8 col-form-label">Short break length</label>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-short-break" class="form-control" type="number" min="1" max="60" step="1" />
+                  <span class="input-group-text">min</span>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3 align-items-center">
+              <label for="setting-long-break" class="col-sm-8 col-form-label">Long break length</label>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-long-break" class="form-control" type="number" min="1" max="90" step="1" />
+                  <span class="input-group-text">min</span>
+                </div>
+              </div>
+            </div>
+            <div class="row mb-3 align-items-center">
+              <label for="setting-work-periods-before-long-break" class="col-sm-8 col-form-label">Work periods before a long break</label>
+              <div class="col-sm-4">
+                <input id="setting-work-periods-before-long-break" class="form-control" type="number" min="1" max="12" step="1" />
+              </div>
+            </div>
+
+            <div class="form-check form-switch mb-2">
+              <input id="setting-automatic-start" class="form-check-input" type="checkbox" role="switch" />
+              <label for="setting-automatic-start" class="form-check-label">Start the next period automatically</label>
+            </div>
+            <div class="form-check form-switch">
+              <input id="setting-pause-during-break" class="form-check-input" type="checkbox" role="switch" />
+              <label for="setting-pause-during-break" class="form-check-label">Pause posture monitoring during a break</label>
+            </div>
+
+            <p class="form-text mt-3 mb-0">A period already counting down keeps the length it started with. A new length applies from the next period.</p>
+          </div>
+          <div class="modal-footer">
+            <button id="settings-restore-defaults" class="btn btn-outline-secondary" type="button">Restore defaults</button>
+            <button id="settings-cancel" class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
+            <button id="settings-save" class="btn btn-primary" type="button">Save</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
-      <form method="dialog" class="settings-form">
-        <h2 class="settings-title" id="settings-title">Pomodoro settings</h2>
-
-        <div class="settings-field">
-          <label for="setting-work-period">Work period length</label>
-          <span class="settings-input"><input id="setting-work-period" type="number" min="1" max="180" step="1" /><span class="settings-unit">minutes</span></span>
-        </div>
-        <div class="settings-field">
-          <label for="setting-short-break">Short break length</label>
-          <span class="settings-input"><input id="setting-short-break" type="number" min="1" max="60" step="1" /><span class="settings-unit">minutes</span></span>
-        </div>
-        <div class="settings-field">
-          <label for="setting-long-break">Long break length</label>
-          <span class="settings-input"><input id="setting-long-break" type="number" min="1" max="90" step="1" /><span class="settings-unit">minutes</span></span>
-        </div>
-        <div class="settings-field">
-          <label for="setting-work-periods-before-long-break">Work periods before a long break</label>
-          <span class="settings-input"><input id="setting-work-periods-before-long-break" type="number" min="1" max="12" step="1" /><span class="settings-unit">periods</span></span>
-        </div>
-        <div class="settings-field settings-field-switch">
-          <label for="setting-automatic-start">Start the next period automatically</label>
-          <input id="setting-automatic-start" type="checkbox" />
-        </div>
-        <div class="settings-field settings-field-switch">
-          <label for="setting-pause-during-break">Pause posture monitoring during a break</label>
-          <input id="setting-pause-during-break" type="checkbox" />
-        </div>
-
-        <p class="settings-note">A period already counting down keeps the length it started with. A new length applies from the next period.</p>
-
-        <div class="settings-actions">
-          <button id="settings-restore-defaults" class="ghost-button" type="button">Restore defaults</button>
-          <button id="settings-cancel" class="ghost-button" type="button">Cancel</button>
-          <button id="settings-save" class="primary-button settings-save" type="button">Save</button>
-        </div>
-      </form>
-    </dialog>
     <script type="module" src="./js/main.ts"></script>
   </body>
 </html>
