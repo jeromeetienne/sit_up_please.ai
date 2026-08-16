@@ -19,15 +19,15 @@
       <div class="container gap-2">
         <span class="navbar-brand mb-0 me-0">Sit Up, Please</span>
         <div class="d-flex flex-wrap gap-2">
-          <button id="install-app" class="btn btn-outline-secondary btn-sm" type="button" hidden>
+          <button id="install-app" class="btn btn-outline-secondary btn-sm" type="button" title="Install this application" hidden>
             <i class="bi bi-download" aria-hidden="true"></i>
             Install app
           </button>
-          <button id="recalibrate" class="btn btn-outline-secondary btn-sm" type="button">
+          <button id="recalibrate" class="btn btn-outline-secondary btn-sm" type="button" title="Calibrate the reference posture again">
             <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
             Recalibrate
           </button>
-          <button id="toggle-monitoring" class="btn btn-outline-secondary btn-sm" type="button">
+          <button id="toggle-monitoring" class="btn btn-outline-secondary btn-sm" type="button" title="Start">
             <i class="bi bi-play-fill" id="toggle-monitoring-icon" aria-hidden="true"></i>
             <span id="toggle-monitoring-label">Start</span>
           </button>
@@ -87,7 +87,7 @@
           <p class="text-body-secondary fst-italic" id="verdict-meta">Nothing has been watched yet.</p>
 
           <div id="start-block">
-            <button id="start-monitoring" class="btn btn-primary" type="button">
+            <button id="start-monitoring" class="btn btn-primary" type="button" title="Start the camera and calibrate the reference posture">
               <i class="bi bi-camera-video" aria-hidden="true"></i>
               Start watching my back
             </button>
@@ -102,7 +102,7 @@
               </div>
               <div class="d-flex align-items-center gap-3">
                 <div class="fs-2" id="pomodoro-countdown">25:00</div>
-                <button id="pomodoro-start-next" class="btn btn-primary btn-sm" type="button" hidden>Start next period</button>
+                <button id="pomodoro-start-next" class="btn btn-primary btn-sm" type="button" title="Start the next pomodoro period" hidden>Start next period</button>
               </div>
             </div>
           </div>
@@ -167,7 +167,7 @@
         <div class="modal-content">
           <div class="modal-header">
             <h2 class="modal-title h5" id="settings-title">Settings</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" title="Close the settings panel"></button>
           </div>
           <div class="modal-body">
             <h3 class="h5">Camera and alerts</h3>
@@ -233,9 +233,9 @@
             <p class="form-text mt-3 mb-0">A period already counting down keeps the length it started with. A new length applies from the next period.</p>
           </div>
           <div class="modal-footer">
-            <button id="settings-restore-defaults" class="btn btn-outline-secondary" type="button">Restore defaults</button>
-            <button id="settings-cancel" class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancel</button>
-            <button id="settings-save" class="btn btn-primary" type="button">Save</button>
+            <button id="settings-restore-defaults" class="btn btn-outline-secondary" type="button" title="Put every pomodoro parameter back to its default">Restore defaults</button>
+            <button id="settings-cancel" class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal" title="Close the settings panel and change nothing">Cancel</button>
+            <button id="settings-save" class="btn btn-primary" type="button" title="Store the pomodoro parameters">Save</button>
           </div>
         </div>
       </div>

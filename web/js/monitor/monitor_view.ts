@@ -176,6 +176,7 @@ export class MonitorView {
 
 		this._monitoringIcon.className = viewModel.monitoringToggleLabel === 'Pause' ? 'bi bi-pause-fill' : 'bi bi-play-fill';
 		this._monitoringLabel.textContent = viewModel.monitoringToggleLabel;
+		this._monitoringButton.title = viewModel.monitoringToggleLabel;
 		this._announce(viewModel);
 	}
 
