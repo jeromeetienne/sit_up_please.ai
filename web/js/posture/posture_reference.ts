@@ -1,4 +1,4 @@
-import type { PostureBaseline, PostureDirection, PostureMeasurement } from '../monitor/monitor_types';
+import type { PostureBaseline, PostureDirection, PostureMeasurement, PostureTolerances } from '../monitor/monitor_types';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -18,6 +18,12 @@ export class PostureReference {
 	 * A reading above this value counts as slouching. A reading of exactly this
 	 * value is the point at which one difference measure reaches its full
 	 * tolerance, so the scale reads as "0 is calibrated, 1 is far out".
+	 *
+	 * This value is a point on the scale rather than a sensitivity, and the Situp
+	 * settings panel does not offer it: the reading is scaled by the very same
+	 * value it is then compared against, so moving it would move the scale and the
+	 * comparison together and change nothing. The two tolerances are what decide
+	 * how easily a posture counts as a slouch.
 	 */
 	static readonly BAD_LEAN_THRESHOLD = 0.42;
 
@@ -26,12 +32,6 @@ export class PostureReference {
 
 	/** The largest reading the interface reports. */
 	static readonly MAX_LEAN = 1;
-
-	/** How much larger the face may look before the reading reaches the threshold. */
-	private static readonly _FACE_SCALE_TOLERANCE = 0.14;
-
-	/** How far the face may move sideways before the reading reaches the threshold. */
-	private static readonly _HORIZONTAL_TOLERANCE = 0.07;
 
 	/**
 	 * Reads and validates the saved reference posture from local browser storage.
@@ -100,12 +100,21 @@ export class PostureReference {
 	 * — are each divided by their own tolerance, and the larger one decides
 	 * both the returned lean value and its direction. The lean value is scaled
 	 * so that reaching a tolerance produces exactly `BAD_LEAN_THRESHOLD`.
+	 *
+	 * @param measurement - The live measurement to score.
+	 * @param reference - The calibrated reference posture to score it against.
+	 * @param tolerances - How far the measurement may stand away from the reference, from the Situp settings panel.
+	 * @returns How far out of position the person is, and which direction is most responsible for it.
 	 */
-	static evaluate(measurement: PostureMeasurement, reference: PostureBaseline): { lean: number; direction: PostureDirection } {
+	static evaluate(
+		measurement: PostureMeasurement,
+		reference: PostureBaseline,
+		tolerances: PostureTolerances,
+	): { lean: number; direction: PostureDirection } {
 		const scaleChange = measurement.faceScale / reference.faceScale - 1;
-		const scaleSeverity = Math.abs(scaleChange) / PostureReference._FACE_SCALE_TOLERANCE;
+		const scaleSeverity = Math.abs(scaleChange) / tolerances.forwardAndBack;
 		const horizontalShift = measurement.faceX - reference.faceX;
-		const horizontalSeverity = Math.abs(horizontalShift) / PostureReference._HORIZONTAL_TOLERANCE;
+		const horizontalSeverity = Math.abs(horizontalShift) / tolerances.sideways;
 
 		const strongestSeverity = Math.max(scaleSeverity, horizontalSeverity);
 		const lean = Math.max(

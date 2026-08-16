@@ -10,6 +10,7 @@ import { OfflineSupport } from './pwa/offline_support';
 import { PostureTracker } from './posture/posture_tracker';
 import { PomodoroDialog } from './pomodoro/pomodoro_dialog';
 import { SettingsDialog } from './settings/settings_dialog';
+import { SitupSettings } from './settings/situp_settings';
 import { ThemePreference } from './theme/theme_preference';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -45,7 +46,8 @@ class Main {
 		const alerts = new NotificationAlerts();
 		const installPrompt = new InstallPrompt();
 		let drawsLandmarks = DRAWS_LANDMARKS_BY_DEFAULT;
-		const tracker = new PostureTracker(video, landmarkCanvas, drawsLandmarks);
+		const situpSettings = SitupSettings.load();
+		const tracker = new PostureTracker(video, landmarkCanvas, drawsLandmarks, SitupSettings.tolerancesOf(situpSettings));
 		const session = new MonitorSession(tracker, {
 			onUpdate: (viewModel) => view.render(viewModel),
 			onAlertRaised: (content) => alerts.show(content),
@@ -53,9 +55,13 @@ class Main {
 			onAlertCleared: () => alerts.clear(),
 			onPomodoroPeriodFinished: (content, toneKind) => alerts.announcePomodoro(content, toneKind),
 			onPomodoroNotificationDismissed: () => alerts.clearPomodoro(),
-		});
+		}, situpSettings);
 
 		const settingsDialog = new SettingsDialog({
+			onSaved: (settings) => {
+				tracker.setTolerances(SitupSettings.tolerancesOf(settings));
+				session.applySitupSettings(settings);
+			},
 			onRestoreDefaults: () => {
 				drawsLandmarks = DRAWS_LANDMARKS_BY_DEFAULT;
 				tracker.setDrawsLandmarks(drawsLandmarks);

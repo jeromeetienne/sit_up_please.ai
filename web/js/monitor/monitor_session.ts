@@ -1,6 +1,7 @@
 import type { CameraState, MonitorPhase, MonitorViewModel, PostureAlertContent, PostureDirection, PostureState, SessionBar, StateColour } from './monitor_types';
 import type { PomodoroAlertContent, PomodoroToneKind } from '../pomodoro/pomodoro_types';
 import type { PomodoroSettingsValues } from '../pomodoro/pomodoro_settings';
+import type { SitupSettingsValues } from '../settings/situp_settings';
 import { MonitorCopy } from './monitor_copy';
 import { PomodoroCopy } from '../pomodoro/pomodoro_copy';
 import { PomodoroSettings } from '../pomodoro/pomodoro_settings';
@@ -14,11 +15,7 @@ import { PostureTracker } from '../posture/posture_tracker';
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const TICK_INTERVAL_MS = 500;
-const TICK_SECONDS = TICK_INTERVAL_MS / 1_000;
 const CALIBRATION_STEP_MS = 900;
-const CALIBRATION_START_COUNT = 3;
-const ALERT_DELAY_SEC = 5;
 const RIBBON_BAR_SECONDS = 2;
 const RIBBON_BAR_LIMIT = 72;
 
@@ -34,8 +31,8 @@ export type MonitorSessionCallbacks = {
 
 /**
  * Drives the single monitor screen: it moves between standing by, calibrating
- * and monitoring, reads the posture twice a second, keeps the session figures,
- * and produces the values the interface draws.
+ * and monitoring, reads the posture at the rate the Situp settings panel asks
+ * for, keeps the session figures, and produces the values the interface draws.
  */
 export class MonitorSession {
 	private readonly _tracker: PostureTracker;
@@ -43,13 +40,14 @@ export class MonitorSession {
 	private readonly _pomodoroSettings = PomodoroSettings.load();
 	private readonly _pomodoroTimer: PomodoroTimer;
 
+	private _situpSettings: SitupSettingsValues;
 	private _phase: MonitorPhase = 'idle';
 	private _isPaused = false;
 	private _posture: PostureState = 'good';
 	private _lean = 0;
 	private _direction: PostureDirection = 'forward';
 	private _isReadingAvailable = false;
-	private _calibrationCount = CALIBRATION_START_COUNT;
+	private _calibrationCount: number;
 	private _sessionSec = 0;
 	private _goodSec = 0;
 	private _goodRunSec = 0;
@@ -63,9 +61,11 @@ export class MonitorSession {
 	private _tickTimer: number | undefined;
 	private _calibrationTimer: number | undefined;
 
-	constructor(tracker: PostureTracker, callbacks: MonitorSessionCallbacks) {
+	constructor(tracker: PostureTracker, callbacks: MonitorSessionCallbacks, situpSettings: SitupSettingsValues) {
 		this._tracker = tracker;
 		this._callbacks = callbacks;
+		this._situpSettings = situpSettings;
+		this._calibrationCount = situpSettings.calibrationCount;
 		this._pomodoroTimer = new PomodoroTimer(this._pomodoroSettings, {
 			onTick: () => this.publish(),
 			onPeriodFinished: (finishedKind, nextKind, nextDurationSec) => {
@@ -82,6 +82,25 @@ export class MonitorSession {
 				this._callbacks.onPomodoroPeriodFinished(content, toneKind);
 			},
 		});
+	}
+
+	/**
+	 * Takes the settings saved in the Situp settings panel. A new reading rate
+	 * restarts the reading timer at once when the session is already running, so
+	 * the new rate takes effect without calibrating again. The tolerances are the
+	 * business of the posture tracker, which `main.ts` hands them to.
+	 *
+	 * @param settings - The situp settings as they were saved.
+	 * @returns Nothing.
+	 */
+	applySitupSettings(settings: SitupSettingsValues): void {
+		const wasReadingRateChanged = settings.readsPerSecond !== this._situpSettings.readsPerSecond;
+		this._situpSettings = settings;
+		if (wasReadingRateChanged && this._phase === 'running') {
+			window.clearInterval(this._tickTimer);
+			this._tickTimer = window.setInterval(() => this._tick(), this._tickIntervalMs);
+		}
+		this.publish();
 	}
 
 	/**
@@ -113,8 +132,9 @@ export class MonitorSession {
 	}
 
 	/**
-	 * Opens the camera, then counts down from three while the person settles
-	 * into the posture that becomes the reference.
+	 * Opens the camera, then counts down through the number of counts the Situp
+	 * settings panel asks for, while the person settles into the posture that
+	 * becomes the reference.
 	 *
 	 * The countdown only starts once the camera and the face model are ready, so
 	 * that the first calibration of a visit is measured rather than missed while
@@ -126,7 +146,7 @@ export class MonitorSession {
 		const calibrationRun = this._calibrationRun;
 		this._phase = 'calibrating';
 		this._isPaused = false;
-		this._calibrationCount = CALIBRATION_START_COUNT;
+		this._calibrationCount = this._situpSettings.calibrationCount;
 		this._clearAlert();
 		this.publish();
 
@@ -176,6 +196,16 @@ export class MonitorSession {
 	///////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////
 
+	/** How long one reading tick waits, in milliseconds, at the rate the Situp settings panel asks for. */
+	private get _tickIntervalMs(): number {
+		return 1_000 / this._situpSettings.readsPerSecond;
+	}
+
+	/** How much time one reading tick stands for, in seconds. */
+	private get _tickSeconds(): number {
+		return 1 / this._situpSettings.readsPerSecond;
+	}
+
 	/** Stores the new reference posture and resets every session figure. */
 	private _startMonitoring(): void {
 		this._tracker.finishCalibration();
@@ -193,7 +223,7 @@ export class MonitorSession {
 		this._clearAlert();
 
 		window.clearInterval(this._tickTimer);
-		this._tickTimer = window.setInterval(() => this._tick(), TICK_INTERVAL_MS);
+		this._tickTimer = window.setInterval(() => this._tick(), this._tickIntervalMs);
 		this.publish();
 	}
 
@@ -222,14 +252,14 @@ export class MonitorSession {
 		}
 
 		const isBad = reading.lean > PostureReference.BAD_LEAN_THRESHOLD;
-		this._sessionSec += TICK_SECONDS;
+		this._sessionSec += this._tickSeconds;
 		if (isBad) {
 			if (this._posture === 'good') this._slipCount += 1;
-			this._badRunSec += TICK_SECONDS;
+			this._badRunSec += this._tickSeconds;
 			this._goodRunSec = 0;
 		} else {
-			this._goodSec += TICK_SECONDS;
-			this._goodRunSec += TICK_SECONDS;
+			this._goodSec += this._tickSeconds;
+			this._goodRunSec += this._tickSeconds;
 			this._badRunSec = 0;
 			this._bestRunSec = Math.max(this._bestRunSec, this._goodRunSec);
 		}
@@ -250,7 +280,7 @@ export class MonitorSession {
 			this._clearAlert();
 			return;
 		}
-		if (this._badRunSec < ALERT_DELAY_SEC) return;
+		if (this._badRunSec < this._situpSettings.alertDelaySec) return;
 
 		if (this._isAlertActive === false) {
 			this._isAlertActive = true;
@@ -268,7 +298,7 @@ export class MonitorSession {
 
 	/** Adds one ribbon segment for every two seconds of the session. */
 	private _appendRibbonBar(isBad: boolean): void {
-		this._secondsSinceLastBar += TICK_SECONDS;
+		this._secondsSinceLastBar += this._tickSeconds;
 		if (this._secondsSinceLastBar < RIBBON_BAR_SECONDS) return;
 
 		this._secondsSinceLastBar = 0;
@@ -324,7 +354,7 @@ export class MonitorSession {
 		} else if (isBad) {
 			verdict = MonitorCopy.badVerdict(this._direction);
 			guidance = MonitorCopy.badLine(this._direction, this._slipCount);
-			verdictMeta = `Out of position for ${MonitorCopy.formatDuration(Math.max(this._badRunSec, TICK_SECONDS))}.`;
+			verdictMeta = `Out of position for ${MonitorCopy.formatDuration(Math.max(this._badRunSec, this._tickSeconds))}.`;
 			stateColour = 'bad';
 		} else if (isLive) {
 			verdict = 'Upright.';
@@ -355,7 +385,7 @@ export class MonitorSession {
 			cameraNote: cameraState === 'denied'
 				? 'Camera blocked — showing the tracking layer only'
 				: 'Front camera · mirrored',
-			rateNote: MonitorSession._rateNote(isLive && isReading, isBlind, cameraState),
+			rateNote: MonitorSession._rateNote(isLive && isReading, isBlind, cameraState, this._situpSettings.readsPerSecond),
 			uprightText: `${uprightShare}%`,
 			slipsText: String(this._slipCount),
 			bestRunText: MonitorCopy.formatDuration(this._bestRunSec),
@@ -381,11 +411,16 @@ export class MonitorSession {
 	}
 
 	/** Returns the reading-rate note printed under the camera picture. */
-	private static _rateNote(isReading: boolean, isBlind: boolean, cameraState: CameraState): string {
+	private static _rateNote(
+		isReading: boolean,
+		isBlind: boolean,
+		cameraState: CameraState,
+		readsPerSecond: number,
+	): string {
 		if (isReading === false) return 'Idle';
 		if (cameraState === 'denied') return 'Camera blocked';
 		if (isBlind) return 'No face in frame';
-		return '2 reads / second';
+		return `${readsPerSecond} ${readsPerSecond === 1 ? 'read' : 'reads'} / second`;
 	}
 
 	/** Returns the label of the monitoring button in the footer. */
