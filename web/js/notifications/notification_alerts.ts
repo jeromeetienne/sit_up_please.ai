@@ -1,9 +1,12 @@
+import type { NotificationEventKind, NotificationSettingsValues, NotificationSoundName, ToneSequence } from './notification_types';
 import type { PomodoroAlertContent, PomodoroToneKind } from '../pomodoro/pomodoro_types';
 import type { PostureAlertContent } from '../monitor/monitor_types';
+import { NotificationSettings } from './notification_settings';
+import { NotificationSounds } from './notification_sounds';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-//	NotificationAlerts — the optional desktop alert and its two-note tone
+//	NotificationAlerts — the optional desktop alert and its tone
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -15,37 +18,21 @@ const NOTIFICATION_TAG = 'sit-up-please-posture-reminder';
  */
 const POMODORO_NOTIFICATION_TAG = 'sit-up-please-pomodoro-period';
 
-/** One tone's shape: the notes it plays, how loud, and how long each note lasts. */
-type ToneSequence = {
-	frequencies: number[];
-	peakGain: number;
-	noteDurationSec: number;
+/** Which notification event each pomodoro tone kind belongs to. */
+const POMODORO_EVENT_KIND: Record<PomodoroToneKind, NotificationEventKind> = {
+	'work-finished': 'work-period-finished',
+	'break-finished': 'break-finished',
 };
 
 /**
- * The tone that plays for each stage of a sustained bad posture, growing
- * louder, higher-pitched, and busier the longer the slouch continues.
+ * How much louder each stage of a sustained bad posture plays than the sound
+ * chosen for it, so the alert still grows stronger the longer the slouch
+ * continues whichever sound and volume the person has chosen.
  */
-const ALERT_TONE_STAGES: ToneSequence[] = [
-	{ frequencies: [660, 880], peakGain: 0.15, noteDurationSec: 0.15 },
-	{ frequencies: [740, 1000], peakGain: 0.22, noteDurationSec: 0.13 },
-	{ frequencies: [700, 950, 1200], peakGain: 0.28, noteDurationSec: 0.1 },
-	{ frequencies: [740, 1000, 1300], peakGain: 0.35, noteDurationSec: 0.08 },
-];
+const ALERT_STAGE_LOUDNESS = [0.6, 0.85, 1.1, 1.4];
 
-/** The pleasant chime that plays once a sustained bad posture is corrected. */
-const REWARD_CHIME: ToneSequence = { frequencies: [523, 659, 784], peakGain: 0.1, noteDurationSec: 0.12 };
-
-/**
- * The tone that plays when a pomodoro period finishes. Neither tone escalates:
- * a period ending is one event, not a condition that continues. The two tones
- * are also plainly different from the posture alert tone and from the reward
- * chime, so the reason for a sound is never in doubt.
- */
-const POMODORO_TONES: Record<PomodoroToneKind, ToneSequence> = {
-	'work-finished': { frequencies: [440, 330], peakGain: 0.18, noteDurationSec: 0.22 },
-	'break-finished': { frequencies: [523, 784], peakGain: 0.18, noteDurationSec: 0.18 },
-};
+/** The loudest any sound may play, whatever the volume and the stage ask for. */
+const LOUDNESS_CEILING = 0.6;
 
 /** The bad-posture seconds at which each later stage takes over from the last. */
 const ALERT_STAGE_BOUNDARIES_SEC = [20, 60, 120];
@@ -63,9 +50,15 @@ const ALERT_STAGE3_SHRINK_WINDOW_SEC = 60;
  * repeats and grows stronger for as long as the slouch continues, for the
  * times when the page is not the window in front of the person. A pleasant
  * chime plays once the posture is corrected. Off until the person turns it on.
+ *
+ * Every event is set up on its own in the notification panel: whether it shows
+ * a desktop notification, whether it plays a sound, which sound, and how loud.
+ * The single switch this class carries stands above that setup: it holds the
+ * browser permission, and while it is off no event notifies at all.
  */
 export class NotificationAlerts {
 	private _isEnabled: boolean;
+	private _settings: NotificationSettingsValues = NotificationSettings.load();
 	private _notification: Notification | undefined;
 	private _pomodoroNotification: Notification | undefined;
 	private _audioContext: AudioContext | undefined;
@@ -85,9 +78,24 @@ export class NotificationAlerts {
 		return 'Notification' in window;
 	}
 
-	/** Whether desktop alerts are currently turned on. */
+	/** Whether notifications and sounds are currently allowed. */
 	get isEnabled(): boolean {
 		return this._isEnabled;
+	}
+
+	/** The notification setup of every event, as it stands right now. */
+	get settings(): NotificationSettingsValues {
+		return NotificationSettings.copyOf(this._settings);
+	}
+
+	/**
+	 * Takes a new notification setup, from the notification panel.
+	 *
+	 * @param settings - The notification setup of every event.
+	 * @returns Nothing.
+	 */
+	applySettings(settings: NotificationSettingsValues): void {
+		this._settings = NotificationSettings.copyOf(settings);
 	}
 
 	/**
@@ -100,8 +108,23 @@ export class NotificationAlerts {
 	}
 
 	/**
-	 * Turns desktop alerts on or off, asking for permission the first time.
-	 * Returns whether alerts are on after the change.
+	 * Plays one event's sound at one volume, so a person setting the panel up
+	 * hears what the event will sound like before leaving the panel. It plays
+	 * whether or not the event is set to make a sound, because the person is
+	 * tuning the sound rather than waiting for the event.
+	 *
+	 * @param soundName - The sound of the catalogue to play.
+	 * @param volume - How loud to play it, between 0 and 1.
+	 * @returns Nothing.
+	 */
+	playSample(soundName: NotificationSoundName, volume: number): void {
+		this.prepareAudio();
+		this._playToneSequence(NotificationSounds.toneFor(soundName), volume);
+	}
+
+	/**
+	 * Allows notifications and sounds, or forbids them, asking for the browser
+	 * permission the first time. Returns whether they are allowed after the change.
 	 */
 	async setEnabled(isEnabled: boolean): Promise<boolean> {
 		if (isEnabled === false || this.isSupported === false) {
@@ -118,10 +141,10 @@ export class NotificationAlerts {
 	}
 
 	/**
-	 * Puts desktop alerts back to the state a fresh page load would give them:
-	 * on when the browser has already granted permission, off otherwise. Never
-	 * asks for permission, so pressing restore defaults raises no prompt.
-	 * Returns whether alerts are on after the change.
+	 * Puts notifications and sounds back to the state a fresh page load would
+	 * give them: allowed when the browser has already granted permission,
+	 * forbidden otherwise. Never asks for permission, so pressing restore
+	 * defaults raises no prompt. Returns whether they are allowed after the change.
 	 */
 	restoreDefault(): boolean {
 		const isEnabled = NotificationAlerts._defaultEnabled();
@@ -148,8 +171,7 @@ export class NotificationAlerts {
 
 	/** Shows one desktop alert for a sustained bad posture. */
 	show(content: PostureAlertContent): void {
-		if (this._isEnabled === false || this.isSupported === false) return;
-		if (Notification.permission !== 'granted') return;
+		if (this._canShowDesktopNotification('posture-slouch') === false) return;
 
 		this._notification?.close();
 		this._notification = new Notification(content.title, {
@@ -175,7 +197,8 @@ export class NotificationAlerts {
 
 		if (this._isEnabled === false) return;
 
-		if (this.isSupported && Notification.permission === 'granted') {
+		const eventKind = POMODORO_EVENT_KIND[toneKind];
+		if (this._canShowDesktopNotification(eventKind)) {
 			this._pomodoroNotification?.close();
 			this._pomodoroNotification = new Notification(content.title, {
 				body: content.body,
@@ -183,7 +206,7 @@ export class NotificationAlerts {
 				requireInteraction: true,
 			});
 		}
-		this._playToneSequence(POMODORO_TONES[toneKind]);
+		this._playEventSound(eventKind, 1);
 	}
 
 	/** Closes the visible pomodoro notification, when the timer is switched off. */
@@ -207,7 +230,7 @@ export class NotificationAlerts {
 		if (this._lastToneAtSec !== undefined && badRunSec - this._lastToneAtSec < repeatIntervalSec) return;
 
 		this._lastToneAtSec = badRunSec;
-		this._playToneSequence(ALERT_TONE_STAGES[stage]);
+		this._playEventSound('posture-slouch', ALERT_STAGE_LOUDNESS[stage]);
 	}
 
 	/**
@@ -221,10 +244,18 @@ export class NotificationAlerts {
 
 		const wasEscalating = this._lastToneAtSec !== undefined;
 		this._lastToneAtSec = undefined;
-		if (wasEscalating) this._playToneSequence(REWARD_CHIME);
+		if (wasEscalating) {
+			this._playEventSound('posture-corrected', 1);
+		}
 	}
 
-	/** Whether desktop alerts start on: only when this browser already grants them. */
+	///////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////
+	//	Helpers
+	///////////////////////////////////////////////////////////////////////////////
+	///////////////////////////////////////////////////////////////////////////////
+
+	/** Whether notifications and sounds start allowed: only when this browser already grants them. */
 	private static _defaultEnabled(): boolean {
 		return 'Notification' in window && Notification.permission === 'granted';
 	}
@@ -252,10 +283,31 @@ export class NotificationAlerts {
 		return ALERT_STAGE3_REPEAT_START_SEC - shrinkShare * (ALERT_STAGE3_REPEAT_START_SEC - ALERT_STAGE3_REPEAT_FLOOR_SEC);
 	}
 
-	/** Plays a short tone made of one or more notes in a row. */
-	private _playToneSequence(tone: ToneSequence): void {
+	/**
+	 * Whether one event may show a desktop notification right now: the single
+	 * permission switch is on, the browser offers notifications, it has granted
+	 * permission, and the event is set up to show one.
+	 */
+	private _canShowDesktopNotification(eventKind: NotificationEventKind): boolean {
+		if (this._isEnabled === false || this.isSupported === false) return false;
+		if (Notification.permission !== 'granted') return false;
+		return this._settings[eventKind].showsDesktopNotification;
+	}
+
+	/** Plays the sound one event is set up to play, at the loudness its stage asks for. */
+	private _playEventSound(eventKind: NotificationEventKind, stageLoudness: number): void {
+		const eventSettings = this._settings[eventKind];
+		if (eventSettings.playsSound === false) return;
+		this._playToneSequence(NotificationSounds.toneFor(eventSettings.soundName), eventSettings.volume * stageLoudness);
+	}
+
+	/** Plays a short tone made of one or more notes in a row, at one volume. */
+	private _playToneSequence(tone: ToneSequence, volume: number): void {
 		const audioContext = this._audioContext;
 		if (audioContext === undefined) return;
+
+		const peakGain = Math.min(LOUDNESS_CEILING, tone.peakGain * volume);
+		if (peakGain <= 0.0001) return;
 
 		void audioContext.resume().then(() => {
 			const oscillator = audioContext.createOscillator();
@@ -268,7 +320,7 @@ export class NotificationAlerts {
 				oscillator.frequency.setValueAtTime(frequency, now + index * tone.noteDurationSec);
 			});
 			gain.gain.setValueAtTime(0.0001, now);
-			gain.gain.exponentialRampToValueAtTime(tone.peakGain, now + 0.02);
+			gain.gain.exponentialRampToValueAtTime(peakGain, now + 0.02);
 			gain.gain.exponentialRampToValueAtTime(0.0001, now + totalDurationSec);
 			oscillator.connect(gain).connect(audioContext.destination);
 			oscillator.start(now);

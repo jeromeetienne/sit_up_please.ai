@@ -96,13 +96,16 @@ export class PomodoroTimer {
 	/** Builds one complete description of what the pomodoro area should show. */
 	viewModel(): PomodoroViewModel {
 		const workPeriodNumber = Math.min(this._completedWorkPeriods + 1, this._settings.workPeriodsBeforeLongBreak);
+		const countdownText = PomodoroCopy.formatCountdown(this._remainingSec);
 		return {
 			isActive: this._runState !== 'off',
 			periodLabel: PomodoroCopy.periodLabel(this._periodKind, workPeriodNumber, this._settings.workPeriodsBeforeLongBreak),
-			countdownText: PomodoroCopy.formatCountdown(this._remainingSec),
+			countdownText: countdownText,
 			statusText: PomodoroCopy.statusText(this._runState, this._periodKind),
 			isOn: this._runState !== 'off',
 			isAwaitingStart: this._runState === 'awaiting-start',
+			toggleLabel: PomodoroCopy.toggleLabel(this._runState, countdownText),
+			toggleTitle: PomodoroCopy.toggleTitle(this._runState),
 		};
 	}
 

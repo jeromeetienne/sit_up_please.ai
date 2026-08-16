@@ -1,16 +1,16 @@
 # Directory Context: `/web/js/settings`
 
 ## Purpose
-Holds the settings panel: the modal dialog that edits the pomodoro parameters and stores them.
+Holds the settings panel: the modal dialog that carries the camera settings.
 
 ## Key Exports & Entry Points
-- `settings_dialog.ts`: `SettingsDialog`, which fills its fields from `PomodoroSettings.load()`, writes them back with `PomodoroSettings.save()`, reports the saved values through its `onSaved` callback, and reports a press of restore defaults through its `onRestoreDefaults` callback.
+- `settings_dialog.ts`: `SettingsDialog`, which opens the panel and reports a press of restore defaults through its `onRestoreDefaults` callback.
 
 ## Rules
-- The shape of the settings and their defaults live in `../pomodoro/pomodoro_settings.ts`; nothing here restates a default value or a storage key.
-- This folder only writes to the elements of the settings dialog itself. Everything else on the monitor screen belongs to `MonitorView`.
-- Restore defaults covers every setting of the panel, not only the pomodoro parameters: this folder fills its own fields, and `main.ts` puts back the settings it owns through `onRestoreDefaults` — the facial landmark drawing, the desktop alerts and the running timer.
-- A field left empty, or holding a value outside its range, falls back to the default for that parameter instead of stopping the save, so the panel can never store a length of zero.
+- This folder only writes to the elements of the settings dialog itself. Everything else on the monitor screen belongs to `MonitorView`, including the facial landmark switch inside this panel, because that switch acts as soon as it is pressed and its position is written from the running session.
+- Every setting of this panel acts at once, so the panel has no save button and nothing here reads or writes local browser storage.
+- The pomodoro parameters belong to the Pomodoro settings panel in `../pomodoro/pomodoro_dialog.ts` and the notification setup to the Notification settings panel in `../notifications/notification_dialog.ts`. Nothing here restates a value, a default or a storage key of either.
+- Restore defaults covers the settings of this panel alone: `main.ts` puts the facial landmark drawing back through `onRestoreDefaults`. The other two panels each restore their own defaults.
 
 ## Background
-- The panel edits values a running cycle already depends on, so `MonitorSession.applyPomodoroSettings` decides what a change means for the period counting down at that moment.
+- This panel held the pomodoro parameters and the notification permission before each of them was given a panel of its own.

@@ -5,8 +5,10 @@ import { InstallPrompt } from './pwa/install_prompt';
 import { MonitorSession } from './monitor/monitor_session';
 import { MonitorView } from './monitor/monitor_view';
 import { NotificationAlerts } from './notifications/notification_alerts';
+import { NotificationDialog } from './notifications/notification_dialog';
 import { OfflineSupport } from './pwa/offline_support';
 import { PostureTracker } from './posture/posture_tracker';
+import { PomodoroDialog } from './pomodoro/pomodoro_dialog';
 import { SettingsDialog } from './settings/settings_dialog';
 import { ThemePreference } from './theme/theme_preference';
 
@@ -54,25 +56,44 @@ class Main {
 		});
 
 		const settingsDialog = new SettingsDialog({
-			onSaved: (settings) => session.applyPomodoroSettings(settings),
 			onRestoreDefaults: () => {
 				drawsLandmarks = DRAWS_LANDMARKS_BY_DEFAULT;
 				tracker.setDrawsLandmarks(drawsLandmarks);
 				view.setLandmarksState(drawsLandmarks);
-				view.setAlertsState(alerts.isSupported, alerts.restoreDefault());
-				session.switchPomodoroOff();
+			},
+		});
+
+		const pomodoroDialog = new PomodoroDialog({
+			onSaved: (settings) => session.applyPomodoroSettings(settings),
+			onRestoreDefaults: () => session.switchPomodoroOff(),
+		});
+
+		const notificationDialog = new NotificationDialog({
+			onSaved: (settings) => alerts.applySettings(settings),
+			onPlaySample: (soundName, volume) => alerts.playSample(soundName, volume),
+			onTogglePermission: () => {
+				void alerts.setEnabled(alerts.isEnabled === false).then((isEnabled) => {
+					notificationDialog.setPermissionState(alerts.isSupported, isEnabled);
+				});
+			},
+			onRestoreDefaults: () => {
+				notificationDialog.setPermissionState(alerts.isSupported, alerts.restoreDefault());
 			},
 		});
 
 		view.bindActions({
 			onStart: () => {
 				alerts.prepareAudio();
-				void alerts.requestOnFirstStart().then((isEnabled) => view.setAlertsState(alerts.isSupported, isEnabled));
+				void alerts.requestOnFirstStart().then((isEnabled) => {
+					notificationDialog.setPermissionState(alerts.isSupported, isEnabled);
+				});
 				session.beginCalibration();
 			},
 			onRecalibrate: () => {
 				alerts.prepareAudio();
-				void alerts.requestOnFirstStart().then((isEnabled) => view.setAlertsState(alerts.isSupported, isEnabled));
+				void alerts.requestOnFirstStart().then((isEnabled) => {
+					notificationDialog.setPermissionState(alerts.isSupported, isEnabled);
+				});
 				session.beginCalibration();
 			},
 			onToggleMonitoring: () => session.toggleMonitoring(),
@@ -81,11 +102,8 @@ class Main {
 				session.togglePomodoro();
 			},
 			onOpenSettings: () => settingsDialog.open(),
-			onToggleAlerts: () => {
-				void alerts.setEnabled(alerts.isEnabled === false).then((isEnabled) => {
-					view.setAlertsState(alerts.isSupported, isEnabled);
-				});
-			},
+			onOpenNotifications: () => notificationDialog.open(),
+			onOpenPomodoro: () => pomodoroDialog.open(),
 			onCycleTheme: () => themePreference.cycle(),
 			onToggleLandmarks: () => {
 				drawsLandmarks = drawsLandmarks === false;
@@ -96,7 +114,7 @@ class Main {
 		});
 
 		themePreference.onChange((choice) => view.setThemeState(choice));
-		view.setAlertsState(alerts.isSupported, alerts.isEnabled);
+		notificationDialog.setPermissionState(alerts.isSupported, alerts.isEnabled);
 		view.setLandmarksState(drawsLandmarks);
 		view.setInstallState(false);
 		installPrompt.onAvailabilityChange((isAvailable) => view.setInstallState(isAvailable));

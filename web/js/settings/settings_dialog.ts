@@ -1,67 +1,43 @@
 import Modal from 'bootstrap/js/dist/modal';
 
-import type { PomodoroSettingsValues } from '../pomodoro/pomodoro_settings';
-import { POMODORO_DEFAULT_SETTINGS, PomodoroSettings } from '../pomodoro/pomodoro_settings';
-
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-//	SettingsDialog — the panel that edits the pomodoro parameters
+//	SettingsDialog — the panel that holds the camera settings
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-/** The smallest and largest value each number field accepts, in its own unit. */
-const WORK_PERIOD_MINUTES_RANGE = { min: 1, max: 180 };
-const SHORT_BREAK_MINUTES_RANGE = { min: 1, max: 60 };
-const LONG_BREAK_MINUTES_RANGE = { min: 1, max: 90 };
-const WORK_PERIODS_BEFORE_LONG_BREAK_RANGE = { min: 1, max: 12 };
-
-/** What the dialog tells the rest of the application when something changes. */
+/** What the panel tells the rest of the application when something changes. */
 export type SettingsDialogCallbacks = {
-	/** Called with the stored settings once the person has pressed save. */
-	onSaved: (settings: PomodoroSettingsValues) => void;
 	/**
-	 * Called when the person has pressed restore defaults. The panel has already
-	 * put the pomodoro parameters back to their defaults in its own fields; this
-	 * asks the rest of the application to put back the settings it owns itself —
-	 * the facial landmark drawing, the desktop alerts and the running timer.
+	 * Called when the person has pressed restore defaults. Every setting of this
+	 * panel acts as soon as it is pressed, so there is nothing for the panel to
+	 * put back in its own fields: it asks the rest of the application to put back
+	 * the settings it owns, which is the facial landmark drawing.
 	 */
 	onRestoreDefaults: () => void;
 };
 
 /**
- * The panel that edits the settings. It reads the stored settings every time it
- * opens, writes the pomodoro parameters back to local browser storage on save,
- * and hands the saved values to the rest of the application. Pressing cancel, or
- * closing the panel with the escape key, changes no pomodoro parameter.
+ * The panel that holds the camera settings. Every setting of the panel acts as
+ * soon as it is pressed rather than on a save, so the panel has no save button
+ * and closing it changes nothing further.
  *
- * The switches at the top of the panel, and the switch that runs the pomodoro
- * timer, are not part of the save: each one acts as soon as it is pressed.
- * Restore defaults puts every setting of the panel back, both the ones that are
- * saved and the ones that act at once.
+ * The pomodoro parameters live in the Pomodoro settings panel and the notification
+ * setup in the Notification settings panel, each opened from its own button in the
+ * navigation bar.
  */
 export class SettingsDialog {
 	private readonly _callbacks: SettingsDialogCallbacks;
 	private readonly _modal = new Modal(SettingsDialog._require<HTMLElement>('settings-dialog'));
-	private readonly _workPeriodInput = SettingsDialog._require<HTMLInputElement>('setting-work-period');
-	private readonly _shortBreakInput = SettingsDialog._require<HTMLInputElement>('setting-short-break');
-	private readonly _longBreakInput = SettingsDialog._require<HTMLInputElement>('setting-long-break');
-	private readonly _workPeriodsInput = SettingsDialog._require<HTMLInputElement>('setting-work-periods-before-long-break');
-	private readonly _automaticStartInput = SettingsDialog._require<HTMLInputElement>('setting-automatic-start');
-	private readonly _pauseDuringBreakInput = SettingsDialog._require<HTMLInputElement>('setting-pause-during-break');
 	private readonly _restoreDefaultsButton = SettingsDialog._require<HTMLButtonElement>('settings-restore-defaults');
-	private readonly _cancelButton = SettingsDialog._require<HTMLButtonElement>('settings-cancel');
-	private readonly _saveButton = SettingsDialog._require<HTMLButtonElement>('settings-save');
 
 	constructor(callbacks: SettingsDialogCallbacks) {
 		this._callbacks = callbacks;
-		this._restoreDefaultsButton.addEventListener('click', () => this._restoreDefaults());
-		this._cancelButton.addEventListener('click', () => this._modal.hide());
-		this._saveButton.addEventListener('click', () => this._save());
+		this._restoreDefaultsButton.addEventListener('click', () => this._callbacks.onRestoreDefaults());
 	}
 
-	/** Opens the panel, showing the settings as they are stored right now. */
+	/** Opens the panel. */
 	open(): void {
-		this._fillFields(PomodoroSettings.load());
 		this._modal.show();
 	}
 
@@ -70,70 +46,6 @@ export class SettingsDialog {
 	//	Helpers
 	///////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////
-
-	/**
-	 * Puts every setting of the panel back to its default: the pomodoro
-	 * parameters in the fields of the panel, and, through the callback, the
-	 * settings the rest of the application owns. The pomodoro parameters are
-	 * only stored once the person presses save, as with any other edit.
-	 */
-	private _restoreDefaults(): void {
-		this._fillFields(POMODORO_DEFAULT_SETTINGS);
-		this._callbacks.onRestoreDefaults();
-	}
-
-	/** Writes one set of settings into the fields of the panel. */
-	private _fillFields(settings: PomodoroSettingsValues): void {
-		this._workPeriodInput.value = String(Math.round(settings.workPeriodSec / 60));
-		this._shortBreakInput.value = String(Math.round(settings.shortBreakSec / 60));
-		this._longBreakInput.value = String(Math.round(settings.longBreakSec / 60));
-		this._workPeriodsInput.value = String(settings.workPeriodsBeforeLongBreak);
-		this._automaticStartInput.checked = settings.startsNextPeriodAutomatically;
-		this._pauseDuringBreakInput.checked = settings.pausesPostureMonitoringDuringBreak;
-	}
-
-	/**
-	 * Reads the fields, stores the settings and closes the panel. A field left
-	 * empty or holding a value outside its range falls back to the default for
-	 * that parameter rather than stopping the save.
-	 */
-	private _save(): void {
-		const settings: PomodoroSettingsValues = {
-			workPeriodSec: 60 * SettingsDialog._readNumber(
-				this._workPeriodInput,
-				POMODORO_DEFAULT_SETTINGS.workPeriodSec / 60,
-				WORK_PERIOD_MINUTES_RANGE,
-			),
-			shortBreakSec: 60 * SettingsDialog._readNumber(
-				this._shortBreakInput,
-				POMODORO_DEFAULT_SETTINGS.shortBreakSec / 60,
-				SHORT_BREAK_MINUTES_RANGE,
-			),
-			longBreakSec: 60 * SettingsDialog._readNumber(
-				this._longBreakInput,
-				POMODORO_DEFAULT_SETTINGS.longBreakSec / 60,
-				LONG_BREAK_MINUTES_RANGE,
-			),
-			workPeriodsBeforeLongBreak: SettingsDialog._readNumber(
-				this._workPeriodsInput,
-				POMODORO_DEFAULT_SETTINGS.workPeriodsBeforeLongBreak,
-				WORK_PERIODS_BEFORE_LONG_BREAK_RANGE,
-			),
-			startsNextPeriodAutomatically: this._automaticStartInput.checked,
-			pausesPostureMonitoringDuringBreak: this._pauseDuringBreakInput.checked,
-		};
-
-		PomodoroSettings.save(settings);
-		this._callbacks.onSaved(settings);
-		this._modal.hide();
-	}
-
-	/** Returns a whole number read from a field, held inside its range. */
-	private static _readNumber(input: HTMLInputElement, fallback: number, range: { min: number; max: number }): number {
-		const parsed = Number.parseInt(input.value, 10);
-		if (Number.isFinite(parsed) === false) return fallback;
-		return Math.min(range.max, Math.max(range.min, parsed));
-	}
 
 	/** Returns an element by its identifier, or fails loudly when it is absent. */
 	private static _require<T extends Element>(elementId: string): T {

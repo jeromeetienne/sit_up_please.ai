@@ -33,4 +33,8 @@ export type PomodoroViewModel = {
 	isOn: boolean;
 	/** Whether a period has finished and the next one is waiting to be started by hand. */
 	isAwaitingStart: boolean;
+	/** The words on the pomodoro button of the navigation bar. */
+	toggleLabel: string;
+	/** What the pomodoro button of the navigation bar does when it is pressed. */
+	toggleTitle: string;
 };
