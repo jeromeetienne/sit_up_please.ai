@@ -8,6 +8,9 @@ contribs/chrome_ext/dist/
 .env.*
 !.env.example
 
+# Claude Code local configuration and local worktrees.
+.claude/
+
 # Operating-system metadata and test reports.
 .DS_Store
 coverage/
