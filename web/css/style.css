@@ -117,7 +117,7 @@ button {
 	position: relative;
 	flex: 1 1 auto;
 	min-height: 0;
-	background: var(--color-neutral-900);
+	background: var(--color-plate);
 	border-radius: var(--radius-md);
 	overflow: hidden;
 }
@@ -148,7 +148,7 @@ button {
 	position: absolute;
 	inset: 0;
 	pointer-events: none;
-	background-image: radial-gradient(circle at 1px 1px, rgb(0 0 0 / 42%) 1px, transparent 1.2px);
+	background-image: radial-gradient(circle at 1px 1px, var(--color-dot-screen) 1px, transparent 1.2px);
 	background-size: 4px 4px;
 	mix-blend-mode: multiply;
 	opacity: 0.55;
@@ -173,7 +173,7 @@ button {
 	align-items: center;
 	justify-content: center;
 	gap: 10px;
-	color: var(--color-neutral-400);
+	color: var(--color-plate-note);
 }
 
 .plate-placeholder[hidden] {
@@ -184,7 +184,7 @@ button {
 	margin: 0;
 	font-family: var(--font-heading);
 	font-size: 26px;
-	color: var(--color-neutral-300);
+	color: var(--color-plate-title);
 }
 
 .placeholder-note {
@@ -202,8 +202,8 @@ button {
 	align-items: center;
 	justify-content: center;
 	gap: 6px;
-	background: rgb(32 30 29 / 72%);
-	color: var(--color-bg);
+	background: var(--color-plate-scrim);
+	color: var(--color-on-plate);
 }
 
 .calibration-overlay[hidden] {
@@ -236,7 +236,7 @@ button {
 	font-size: 11px;
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
-	color: var(--color-bg);
+	color: var(--color-on-plate);
 	opacity: 0.8;
 }
 
@@ -380,7 +380,7 @@ button {
 	font-weight: var(--font-heading-weight);
 	font-size: 19px;
 	background: var(--color-accent);
-	color: #fff;
+	color: var(--color-on-accent);
 	cursor: pointer;
 	transition: background 0.18s;
 }
@@ -673,7 +673,7 @@ button {
 }
 
 .settings-dialog::backdrop {
-	background: color-mix(in srgb, #201e1d 42%, transparent);
+	background: var(--color-scrim);
 }
 
 .settings-title {

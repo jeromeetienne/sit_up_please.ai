@@ -74,6 +74,14 @@ A period already counting down keeps the length it started with, so a change nev
 
 While **Pause posture monitoring during a break** is on, the page reads **On a break.** for the length of every break, no posture reading is taken, and no slip is counted. A break means leaving the chair, so a slouch reminder and a lost face would both fire for no reason.
 
+## Light theme and dark theme
+
+The page follows the light theme or the dark theme of the operating system on its own. Select **Theme** in the footer to force one of the two instead: one press moves from the operating system setting to the light theme, the next to the dark theme, and the next back to the operating system setting.
+
+A forced theme is stored in this browser and is remembered for six hours. Once those six hours have passed the forced theme is forgotten and the page follows the operating system again, whether the page was closed in the meantime or has stayed open the whole time.
+
+Every colour of both themes lives in `web/css/tokens.css`, written as a `light-dark(light value, dark value)` pair. A forced theme reaches the stylesheet as a `data-theme` attribute on the root element, which narrows the colour scheme of the page to one of the two and so wins over the operating system setting.
+
 ## Progressive web application support
 
 The application ships a web app manifest and a service worker, so it can be installed like a native application and can start without a network connection after a first visit.

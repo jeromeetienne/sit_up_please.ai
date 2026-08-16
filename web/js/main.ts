@@ -10,6 +10,7 @@ import { NotificationAlerts } from './notifications/notification_alerts';
 import { OfflineSupport } from './pwa/offline_support';
 import { PostureTracker } from './posture/posture_tracker';
 import { SettingsDialog } from './settings/settings_dialog';
+import { ThemePreference } from './theme/theme_preference';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -34,6 +35,8 @@ class Main {
 		}
 
 		OfflineSupport.register();
+
+		const themePreference = new ThemePreference();
 
 		const view = new MonitorView();
 		const alerts = new NotificationAlerts();
@@ -75,6 +78,7 @@ class Main {
 					view.setAlertsState(alerts.isSupported, isEnabled);
 				});
 			},
+			onCycleTheme: () => themePreference.cycle(),
 			onToggleLandmarks: () => {
 				drawsLandmarks = drawsLandmarks === false;
 				tracker.setDrawsLandmarks(drawsLandmarks);
@@ -83,6 +87,7 @@ class Main {
 			onInstall: () => void installPrompt.promptInstall(),
 		});
 
+		themePreference.onChange((choice) => view.setThemeState(choice));
 		view.setAlertsState(alerts.isSupported, alerts.isEnabled);
 		view.setLandmarksState(drawsLandmarks);
 		view.setInstallState(false);

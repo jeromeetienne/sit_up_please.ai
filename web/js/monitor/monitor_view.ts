@@ -1,4 +1,5 @@
 import type { MonitorViewModel, SessionBar } from './monitor_types';
+import type { ThemeChoice } from '../theme/theme_preference';
 import { MonitorCopy } from './monitor_copy';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,6 +20,7 @@ export type MonitorActions = {
 	onOpenSettings: () => void;
 	onToggleAlerts: () => void;
 	onToggleLandmarks: () => void;
+	onCycleTheme: () => void;
 	onInstall: () => void;
 };
 
@@ -63,6 +65,9 @@ export class MonitorView {
 	private readonly _alertsButton = MonitorView._require<HTMLButtonElement>('toggle-alerts');
 	private readonly _alertsIcon = MonitorView._require<HTMLElement>('toggle-alerts-icon');
 	private readonly _alertsLabel = MonitorView._require<HTMLElement>('toggle-alerts-label');
+	private readonly _themeButton = MonitorView._require<HTMLButtonElement>('toggle-theme');
+	private readonly _themeIcon = MonitorView._require<HTMLElement>('toggle-theme-icon');
+	private readonly _themeLabel = MonitorView._require<HTMLElement>('toggle-theme-label');
 	private readonly _settingsButton = MonitorView._require<HTMLButtonElement>('open-settings');
 	private readonly _pomodoroButton = MonitorView._require<HTMLButtonElement>('toggle-pomodoro');
 	private readonly _pomodoroButtonLabel = MonitorView._require<HTMLElement>('toggle-pomodoro-label');
@@ -89,6 +94,7 @@ export class MonitorView {
 		this._settingsButton.addEventListener('click', actions.onOpenSettings);
 		this._alertsButton.addEventListener('click', actions.onToggleAlerts);
 		this._landmarksButton.addEventListener('click', actions.onToggleLandmarks);
+		this._themeButton.addEventListener('click', actions.onCycleTheme);
 		this._installButton.addEventListener('click', actions.onInstall);
 	}
 
@@ -108,6 +114,22 @@ export class MonitorView {
 	setLandmarksState(isEnabled: boolean): void {
 		this._landmarksIcon.className = isEnabled ? 'bi bi-eye' : 'bi bi-eye-slash';
 		this._landmarksLabel.textContent = isEnabled ? 'Landmarks: on' : 'Landmarks: off';
+	}
+
+	/** Labels the theme button with the theme setting in force. */
+	setThemeState(choice: ThemeChoice): void {
+		const iconByChoice: Record<ThemeChoice, string> = {
+			system: 'bi bi-circle-half',
+			light: 'bi bi-sun',
+			dark: 'bi bi-moon-stars',
+		};
+		const labelByChoice: Record<ThemeChoice, string> = {
+			system: 'Theme: system',
+			light: 'Theme: light',
+			dark: 'Theme: dark',
+		};
+		this._themeIcon.className = iconByChoice[choice];
+		this._themeLabel.textContent = labelByChoice[choice];
 	}
 
 	/** Draws the whole screen from one set of values. */

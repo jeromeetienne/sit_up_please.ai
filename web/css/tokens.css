@@ -4,28 +4,60 @@
  * These values are the single source of truth for colour, type, spacing and
  * elevation. Interface rules read them through var(); they are never repeated
  * as literal values elsewhere in the stylesheet or in TypeScript.
+ *
+ * Every colour is written as light-dark(light value, dark value). The browser
+ * picks one of the two from the used colour scheme of the root element, so the
+ * light theme and the dark theme are declared side by side and no interface
+ * rule in style.css has to change. The root element carries
+ * color-scheme: light dark, which means the operating system setting decides.
+ * A data-theme attribute on the root element narrows that colour scheme to one
+ * of the two and so wins over the operating system setting.
  */
 
 :root {
-	--color-bg: #f3f2f2;
-	--color-surface: #eae9e9;
-	--color-text: #201e1d;
-	--color-accent: #0088b0;
-	--color-accent-2: #d6006c;
-	--color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+	color-scheme: light dark;
 
-	--color-neutral-100: #f8f4f4;
-	--color-neutral-200: #eae7e7;
-	--color-neutral-300: #d7d3d3;
-	--color-neutral-400: #bab6b6;
-	--color-neutral-500: #9b9797;
-	--color-neutral-600: #7d7979;
-	--color-neutral-700: #605d5d;
-	--color-neutral-800: #444141;
-	--color-neutral-900: #2d2b2b;
+	--color-bg: light-dark(#f3f2f2, #171615);
+	--color-surface: light-dark(#eae9e9, #222120);
+	--color-text: light-dark(#201e1d, #f1efed);
+	--color-accent: light-dark(#0088b0, #3cc0e6);
+	--color-accent-2: light-dark(#d6006c, #ff7ab0);
+	--color-divider: light-dark(color-mix(in srgb, #201e1d 16%, transparent), color-mix(in srgb, #f1efed 20%, transparent));
 
-	--color-accent-600: #1186ac;
-	--color-accent-700: #006786;
+	/*
+	 * The neutral ramp runs from the page background towards the text colour,
+	 * so the dark theme walks the same ramp in the opposite direction: 100 is
+	 * always the quietest surface and 900 is always the strongest ink.
+	 */
+	--color-neutral-100: light-dark(#f8f4f4, #232120);
+	--color-neutral-200: light-dark(#eae7e7, #2d2b2b);
+	--color-neutral-300: light-dark(#d7d3d3, #444141);
+	--color-neutral-400: light-dark(#bab6b6, #605d5d);
+	--color-neutral-500: light-dark(#9b9797, #7d7979);
+	--color-neutral-600: light-dark(#7d7979, #a5a1a1);
+	--color-neutral-700: light-dark(#605d5d, #bab6b6);
+	--color-neutral-800: light-dark(#444141, #d7d3d3);
+	--color-neutral-900: light-dark(#2d2b2b, #eae7e7);
+
+	--color-accent-600: light-dark(#1186ac, #5accea);
+	--color-accent-700: light-dark(#006786, #7ad9f0);
+
+	/* The ink written on top of the accent colour, on a button for example. */
+	--color-on-accent: light-dark(#ffffff, #10191c);
+
+	/*
+	 * The camera plate holds a picture in both themes, so it stays dark in both
+	 * themes and the colours written on top of it never follow the ramp above.
+	 */
+	--color-plate: light-dark(#2d2b2b, #0d0c0c);
+	--color-plate-title: #d7d3d3;
+	--color-plate-note: #bab6b6;
+	--color-on-plate: #f3f2f2;
+	--color-plate-scrim: rgb(32 30 29 / 72%);
+	--color-dot-screen: rgb(0 0 0 / 42%);
+
+	/* The dimmed page behind the settings panel. */
+	--color-scrim: light-dark(color-mix(in srgb, #201e1d 42%, transparent), color-mix(in srgb, #000000 62%, transparent));
 
 	--font-heading: 'Source Serif 4 Variable', 'Source Serif 4', system-ui, sans-serif;
 	--font-heading-weight: 600;
@@ -42,9 +74,9 @@
 	--radius-md: 2px;
 	--radius-lg: 4px;
 
-	--shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
-	--shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
-	--shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+	--shadow-sm: 0 1px 2px light-dark(color-mix(in srgb, #2d2b2b 14%, transparent), color-mix(in srgb, #000000 40%, transparent));
+	--shadow-md: 0 3px 10px light-dark(color-mix(in srgb, #2d2b2b 16%, transparent), color-mix(in srgb, #000000 48%, transparent));
+	--shadow-lg: 0 12px 32px light-dark(color-mix(in srgb, #2d2b2b 22%, transparent), color-mix(in srgb, #000000 60%, transparent));
 
 	/*
 	 * Posture state palette — the only colours this application adds on top of
@@ -53,7 +85,7 @@
 	--state-good: var(--color-accent);
 	--state-good-deep: var(--color-accent-700);
 	--state-bad: var(--color-accent-2);
-	--state-bad-deep: #aa0b56;
+	--state-bad-deep: light-dark(#aa0b56, #ff9cc6);
 	--state-unknown: var(--color-neutral-600);
 	--state-unknown-deep: var(--color-neutral-800);
 
@@ -67,6 +99,19 @@
 	 */
 	--state: var(--state-unknown);
 	--state-deep: var(--state-unknown-deep);
+}
+
+/*
+ * A forced theme. Narrowing the colour scheme to one of the two settles every
+ * light-dark() value above, and settles the browser's own colours as well: form
+ * controls, scrollbars and the text caret.
+ */
+:root[data-theme='light'] {
+	color-scheme: only light;
+}
+
+:root[data-theme='dark'] {
+	color-scheme: only dark;
 }
 
 :focus-visible {
