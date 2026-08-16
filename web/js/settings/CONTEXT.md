@@ -17,4 +17,4 @@ Holds the Situp settings panel: the modal dialog that carries the camera setting
 
 ## Background
 - The Situp settings panel held the pomodoro parameters and the notification permission before each of them was given a panel of its own.
-- The situp settings were fixed constants in `../monitor/monitor_session.ts` and `../posture/posture_reference.ts` before this panel could edit them, and their defaults are the values those constants carried.
+- The situp settings were fixed constants in `../monitor/monitor_session.ts` and `../posture/posture_reference.ts` before this panel could edit them, and their defaults are the values those constants carried, except the sideways tolerance, which was widened from 7 to 15 percent because the constant called a slouch too readily.
