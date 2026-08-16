@@ -19,13 +19,25 @@ const WORK_PERIODS_BEFORE_LONG_BREAK_RANGE = { min: 1, max: 12 };
 export type SettingsDialogCallbacks = {
 	/** Called with the stored settings once the person has pressed save. */
 	onSaved: (settings: PomodoroSettingsValues) => void;
+	/**
+	 * Called when the person has pressed restore defaults. The panel has already
+	 * put the pomodoro parameters back to their defaults in its own fields; this
+	 * asks the rest of the application to put back the settings it owns itself —
+	 * the facial landmark drawing, the desktop alerts and the running timer.
+	 */
+	onRestoreDefaults: () => void;
 };
 
 /**
- * The panel that edits the pomodoro parameters. It reads the stored settings
- * every time it opens, writes them back to local browser storage on save, and
- * hands the saved values to the rest of the application. Pressing cancel, or
- * closing the panel with the escape key, changes nothing.
+ * The panel that edits the settings. It reads the stored settings every time it
+ * opens, writes the pomodoro parameters back to local browser storage on save,
+ * and hands the saved values to the rest of the application. Pressing cancel, or
+ * closing the panel with the escape key, changes no pomodoro parameter.
+ *
+ * The switches at the top of the panel, and the switch that runs the pomodoro
+ * timer, are not part of the save: each one acts as soon as it is pressed.
+ * Restore defaults puts every setting of the panel back, both the ones that are
+ * saved and the ones that act at once.
  */
 export class SettingsDialog {
 	private readonly _callbacks: SettingsDialogCallbacks;
@@ -42,7 +54,7 @@ export class SettingsDialog {
 
 	constructor(callbacks: SettingsDialogCallbacks) {
 		this._callbacks = callbacks;
-		this._restoreDefaultsButton.addEventListener('click', () => this._fillFields(POMODORO_DEFAULT_SETTINGS));
+		this._restoreDefaultsButton.addEventListener('click', () => this._restoreDefaults());
 		this._cancelButton.addEventListener('click', () => this._modal.hide());
 		this._saveButton.addEventListener('click', () => this._save());
 	}
@@ -58,6 +70,17 @@ export class SettingsDialog {
 	//	Helpers
 	///////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Puts every setting of the panel back to its default: the pomodoro
+	 * parameters in the fields of the panel, and, through the callback, the
+	 * settings the rest of the application owns. The pomodoro parameters are
+	 * only stored once the person presses save, as with any other edit.
+	 */
+	private _restoreDefaults(): void {
+		this._fillFields(POMODORO_DEFAULT_SETTINGS);
+		this._callbacks.onRestoreDefaults();
+	}
 
 	/** Writes one set of settings into the fields of the panel. */
 	private _fillFields(settings: PomodoroSettingsValues): void {

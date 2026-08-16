@@ -80,6 +80,10 @@ Select **Settings** in the navigation bar to edit them. They are stored in this 
 
 A period already counting down keeps the length it started with, so a change never moves the finishing line of the period the person is in the middle of. A new length applies from the next period.
 
+**Restore defaults**
+
+Select **Restore defaults** in the settings panel to put every setting of the panel back to its default, not only the pomodoro parameters. It draws the facial landmarks over the picture again, puts the desktop notification setting back to where a fresh page load would put it — on when this browser has already granted notification permission, off otherwise, and never asking for permission — and switches the pomodoro timer off. The pomodoro parameters return to the defaults in the table above in the fields of the panel, and are only stored once **Save** is selected, so **Cancel** still leaves the stored parameters as they were.
+
 While **Pause posture monitoring during a break** is on, the page reads **On a break.** for the length of every break, no posture reading is taken, and no slip is counted. A break means leaving the chair, so a slouch reminder and a lost face would both fire for no reason.
 
 ## Light theme and dark theme
