@@ -23,6 +23,24 @@ export type PostureMeasurement = {
 /** The averaged posture measurement saved in browser storage. */
 export type PostureBaseline = PostureMeasurement;
 
+/**
+ * How far a live measurement may stand away from the calibrated reference posture
+ * before it counts as a slouch. Both values come from the Situp settings panel.
+ */
+export type PostureTolerances = {
+	/**
+	 * How much larger or smaller the face may look than at the calibrated
+	 * reference, as a share of the calibrated face size. This is what a movement
+	 * forward or back changes.
+	 */
+	forwardAndBack: number;
+	/**
+	 * How far the face may move sideways from the calibrated reference, as a
+	 * share of the width of the camera picture.
+	 */
+	sideways: number;
+};
+
 /** Whether the camera stream is closed, running, or refused by the browser. */
 export type CameraState = 'off' | 'on' | 'denied';
 

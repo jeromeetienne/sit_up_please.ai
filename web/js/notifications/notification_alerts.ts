@@ -34,6 +34,12 @@ const ALERT_STAGE_LOUDNESS = [0.6, 0.85, 1.1, 1.4];
 /** The loudest any sound may play, whatever the volume and the stage ask for. */
 const LOUDNESS_CEILING = 0.6;
 
+/** How long one note takes to reach its peak, in seconds. Short enough to be crisp, long enough not to click. */
+const NOTE_ATTACK_SEC = 0.012;
+
+/** The share of one note's length its fall back to silence ends at, which leaves a small gap before the next note. */
+const NOTE_DECAY_SHARE = 0.9;
+
 /** The bad-posture seconds at which each later stage takes over from the last. */
 const ALERT_STAGE_BOUNDARIES_SEC = [20, 60, 120];
 
@@ -291,17 +297,28 @@ export class NotificationAlerts {
 	private _canShowDesktopNotification(eventKind: NotificationEventKind): boolean {
 		if (this._isEnabled === false || this.isSupported === false) return false;
 		if (Notification.permission !== 'granted') return false;
-		return this._settings[eventKind].showsDesktopNotification;
+		return this._settings.events[eventKind].showsDesktopNotification;
 	}
 
-	/** Plays the sound one event is set up to play, at the loudness its stage asks for. */
+	/**
+	 * Plays the sound one event is set up to play, at the loudness its stage asks
+	 * for, turned down by the master volume.
+	 */
 	private _playEventSound(eventKind: NotificationEventKind, stageLoudness: number): void {
-		const eventSettings = this._settings[eventKind];
+		const eventSettings = this._settings.events[eventKind];
 		if (eventSettings.playsSound === false) return;
-		this._playToneSequence(NotificationSounds.toneFor(eventSettings.soundName), eventSettings.volume * stageLoudness);
+		this._playToneSequence(
+			NotificationSounds.toneFor(eventSettings.soundName),
+			eventSettings.volume * stageLoudness * this._settings.masterVolume,
+		);
 	}
 
-	/** Plays a short tone made of one or more notes in a row, at one volume. */
+	/**
+	 * Plays a short tone made of one or more notes in a row, at one volume. Every
+	 * note gets its own rise and fall, so a sound of several notes is heard as
+	 * several notes instead of as one long swell, which is what makes one sound
+	 * easy to tell from another.
+	 */
 	private _playToneSequence(tone: ToneSequence, volume: number): void {
 		const audioContext = this._audioContext;
 		if (audioContext === undefined) return;
@@ -315,13 +332,15 @@ export class NotificationAlerts {
 			const now = audioContext.currentTime;
 			const totalDurationSec = tone.frequencies.length * tone.noteDurationSec;
 
-			oscillator.type = 'sine';
-			tone.frequencies.forEach((frequency, index) => {
-				oscillator.frequency.setValueAtTime(frequency, now + index * tone.noteDurationSec);
-			});
+			oscillator.type = tone.waveform;
 			gain.gain.setValueAtTime(0.0001, now);
-			gain.gain.exponentialRampToValueAtTime(peakGain, now + 0.02);
-			gain.gain.exponentialRampToValueAtTime(0.0001, now + totalDurationSec);
+			tone.frequencies.forEach((frequency, index) => {
+				const noteStartSec = now + index * tone.noteDurationSec;
+				oscillator.frequency.setValueAtTime(frequency, noteStartSec);
+				gain.gain.setValueAtTime(0.0001, noteStartSec);
+				gain.gain.exponentialRampToValueAtTime(peakGain, noteStartSec + NOTE_ATTACK_SEC);
+				gain.gain.exponentialRampToValueAtTime(0.0001, noteStartSec + tone.noteDurationSec * NOTE_DECAY_SHARE);
+			});
 			oscillator.connect(gain).connect(audioContext.destination);
 			oscillator.start(now);
 			oscillator.stop(now + totalDurationSec);

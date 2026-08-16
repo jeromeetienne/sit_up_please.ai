@@ -1,5 +1,5 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import type { CameraState, FacialLandmark, LandmarkConnection, PostureBaseline, PostureDirection, PostureMeasurement, PostureReading } from '../monitor/monitor_types';
+import type { CameraState, FacialLandmark, LandmarkConnection, PostureBaseline, PostureDirection, PostureMeasurement, PostureReading, PostureTolerances } from '../monitor/monitor_types';
 import { PostureReference } from './posture_reference';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -28,6 +28,7 @@ export class PostureTracker {
 	private readonly _canvasContext: CanvasRenderingContext2D | null;
 
 	private _drawsLandmarks: boolean;
+	private _tolerances: PostureTolerances;
 	private _faceLandmarker: FaceLandmarker | undefined;
 	private _stream: MediaStream | undefined;
 	private _cameraState: CameraState = 'off';
@@ -39,12 +40,30 @@ export class PostureTracker {
 	private _isCollectingCalibration = false;
 	private _calibrationSamples: PostureMeasurement[] = [];
 
-	constructor(video: HTMLVideoElement, canvas: HTMLCanvasElement, drawsLandmarks: boolean) {
+	constructor(
+		video: HTMLVideoElement,
+		canvas: HTMLCanvasElement,
+		drawsLandmarks: boolean,
+		tolerances: PostureTolerances,
+	) {
 		this._video = video;
 		this._canvas = canvas;
 		this._canvasContext = canvas.getContext('2d');
 		this._drawsLandmarks = drawsLandmarks;
+		this._tolerances = tolerances;
 		canvas.hidden = drawsLandmarks === false;
+	}
+
+	/**
+	 * Takes the tolerances saved in the Situp settings panel. The next reading is
+	 * scored against them, so a change is heard on the very next tick without
+	 * calibrating again.
+	 *
+	 * @param tolerances - How far a measurement may stand away from the reference posture.
+	 * @returns Nothing.
+	 */
+	setTolerances(tolerances: PostureTolerances): void {
+		this._tolerances = tolerances;
 	}
 
 	/** Turns the facial landmark overlay on or off, clearing it when turned off. */
@@ -205,7 +224,7 @@ export class PostureTracker {
 
 		const reference = this._reference;
 		if (reference === undefined) return;
-		const { lean, direction } = PostureReference.evaluate(measurement, reference);
+		const { lean, direction } = PostureReference.evaluate(measurement, reference, this._tolerances);
 		this._lean += (lean - this._lean) * LEAN_SMOOTHING;
 		this._direction = direction;
 	}

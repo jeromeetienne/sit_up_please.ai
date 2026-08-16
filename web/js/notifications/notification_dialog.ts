@@ -1,6 +1,11 @@
 import Modal from 'bootstrap/js/dist/modal';
 
-import type { NotificationEventKind, NotificationSettingsValues, NotificationSoundName } from './notification_types';
+import type {
+	NotificationEventKind,
+	NotificationEventSettingsValues,
+	NotificationSettingsValues,
+	NotificationSoundName,
+} from './notification_types';
 import {
 	EVENTS_WITHOUT_DESKTOP_NOTIFICATION,
 	NOTIFICATION_DEFAULT_SETTINGS,
@@ -36,8 +41,9 @@ export type NotificationDialogCallbacks = {
 	/** Called with the stored setup once the person has pressed save. */
 	onSaved: (settings: NotificationSettingsValues) => void;
 	/**
-	 * Called every time the person presses a play button, with the sound and the
-	 * volume standing in the fields of that event at that moment.
+	 * Called every time the person presses a play button, with the sound of that
+	 * event and the volume it will really be heard at: the volume standing in the
+	 * fields of that event at that moment, turned down by the master volume.
 	 */
 	onPlaySample: (soundName: NotificationSoundName, volume: number) => void;
 	/**
@@ -59,7 +65,8 @@ export type NotificationDialogCallbacks = {
  * application, whether the event shows a desktop notification, whether it plays
  * a sound, which sound of the catalogue it plays and how loud. Every event
  * carries a play button, so the sound and the volume can be heard while they
- * are being chosen.
+ * are being chosen. Above every event stands the master volume, which turns
+ * every sound down together and is stored on save like any other field.
  *
  * The panel reads the stored setup every time it opens and writes it back to
  * local browser storage on save. Pressing cancel, or closing the panel with the
@@ -74,6 +81,8 @@ export class NotificationDialog {
 	private readonly _modal = new Modal(NotificationDialog._require<HTMLElement>('notification-dialog'));
 	private readonly _controls: Record<NotificationEventKind, EventControls>;
 	private readonly _permissionSwitch = NotificationDialog._require<HTMLInputElement>('toggle-alerts');
+	private readonly _masterVolumeInput = NotificationDialog._require<HTMLInputElement>('notification-master-volume');
+	private readonly _masterVolumeValueLabel = NotificationDialog._require<HTMLElement>('notification-master-volume-value');
 	private readonly _restoreDefaultsButton = NotificationDialog._require<HTMLButtonElement>('notification-restore-defaults');
 	private readonly _cancelButton = NotificationDialog._require<HTMLButtonElement>('notification-cancel');
 	private readonly _saveButton = NotificationDialog._require<HTMLButtonElement>('notification-save');
@@ -86,6 +95,9 @@ export class NotificationDialog {
 			this._bindEvent(eventKind);
 		}
 		this._permissionSwitch.addEventListener('change', () => this._callbacks.onTogglePermission());
+		this._masterVolumeInput.addEventListener('input', () => {
+			this._masterVolumeValueLabel.textContent = NotificationDialog._volumeText(this._masterVolumeInput);
+		});
 		this._restoreDefaultsButton.addEventListener('click', () => this._restoreDefaults());
 		this._cancelButton.addEventListener('click', () => this._modal.hide());
 		this._saveButton.addEventListener('click', () => this._save());
@@ -137,10 +149,11 @@ export class NotificationDialog {
 			controls.volumeValueLabel.textContent = NotificationDialog._volumeText(controls.volumeInput);
 		});
 		controls.playButton.addEventListener('click', () => {
-			this._callbacks.onPlaySample(
-				controls.soundNameSelect.value as NotificationSoundName,
-				NotificationDialog._readVolume(controls.volumeInput, NOTIFICATION_DEFAULT_SETTINGS[eventKind].volume),
+			const eventVolume = NotificationDialog._readVolume(
+				controls.volumeInput,
+				NOTIFICATION_DEFAULT_SETTINGS.events[eventKind].volume,
 			);
+			this._callbacks.onPlaySample(controls.soundNameSelect.value as NotificationSoundName, eventVolume * this._readMasterVolume());
 		});
 	}
 
@@ -158,9 +171,12 @@ export class NotificationDialog {
 
 	/** Writes one notification setup into the fields of the panel. */
 	private _fillFields(settings: NotificationSettingsValues): void {
+		this._masterVolumeInput.value = String(Math.round(settings.masterVolume * 100));
+		this._masterVolumeValueLabel.textContent = NotificationDialog._volumeText(this._masterVolumeInput);
+
 		for (const eventKind of NOTIFICATION_EVENT_KINDS) {
 			const controls = this._controls[eventKind];
-			const eventSettings = settings[eventKind];
+			const eventSettings = settings.events[eventKind];
 
 			if (controls.desktopInput !== undefined) {
 				controls.desktopInput.checked = eventSettings.showsDesktopNotification;
@@ -175,12 +191,12 @@ export class NotificationDialog {
 
 	/** Reads the fields, stores the notification setup and closes the panel. */
 	private _save(): void {
-		const settings = {} as NotificationSettingsValues;
+		const events = {} as NotificationEventSettingsValues;
 		for (const eventKind of NOTIFICATION_EVENT_KINDS) {
 			const controls = this._controls[eventKind];
-			const defaults = NOTIFICATION_DEFAULT_SETTINGS[eventKind];
+			const defaults = NOTIFICATION_DEFAULT_SETTINGS.events[eventKind];
 
-			settings[eventKind] = {
+			events[eventKind] = {
 				showsDesktopNotification: controls.desktopInput === undefined ? false : controls.desktopInput.checked,
 				playsSound: controls.soundInput.checked,
 				soundName: NotificationSounds.isKnownName(controls.soundNameSelect.value)
@@ -190,9 +206,19 @@ export class NotificationDialog {
 			};
 		}
 
+		const settings: NotificationSettingsValues = {
+			masterVolume: this._readMasterVolume(),
+			events: events,
+		};
+
 		NotificationSettings.save(settings);
 		this._callbacks.onSaved(settings);
 		this._modal.hide();
+	}
+
+	/** Returns the master volume standing in its slider, between 0 and 1. */
+	private _readMasterVolume(): number {
+		return NotificationDialog._readVolume(this._masterVolumeInput, NOTIFICATION_DEFAULT_SETTINGS.masterVolume);
 	}
 
 	/** Puts every sound of the catalogue into one list, in the order the catalogue holds them. */

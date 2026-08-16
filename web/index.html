@@ -183,7 +183,7 @@
     <p id="live-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
 
     <div class="modal fade" id="settings-dialog" tabindex="-1" aria-labelledby="settings-title" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
         <div class="modal-content">
           <div class="modal-header">
             <h2 class="modal-title h5" id="settings-title">Situp settings</h2>
@@ -196,10 +196,83 @@
               <label for="toggle-landmarks" class="form-check-label">Draw the facial landmarks over the picture</label>
             </div>
             <p class="form-text mb-0">This switch takes effect as soon as it is pressed. The pomodoro timer is set up in the Pomodoro settings panel, and the notifications in the Notification settings panel.</p>
+
+            <h3 class="h5 mt-4">Slouch detection</h3>
+            <p class="form-text mt-0">How far you may move away from the calibrated reference posture before the posture counts as a slouch. A smaller number holds you closer to the reference posture.</p>
+
+            <div class="row mb-3 align-items-center">
+              <div class="col-sm-8">
+                <label for="setting-forward-and-back-tolerance" class="col-form-label py-0">Forward and back tolerance</label>
+                <div class="form-text mt-0">How much larger or smaller your face may look than at the reference posture, which is what leaning forward or back changes.</div>
+              </div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-forward-and-back-tolerance" class="form-control" type="number" min="4" max="40" step="1" inputmode="numeric" />
+                  <span class="input-group-text">% of face size</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <div class="col-sm-8">
+                <label for="setting-sideways-tolerance" class="col-form-label py-0">Sideways tolerance</label>
+                <div class="form-text mt-0">How far your face may move to the left or to the right of the reference posture, across the camera picture.</div>
+              </div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-sideways-tolerance" class="form-control" type="number" min="2" max="30" step="1" inputmode="numeric" />
+                  <span class="input-group-text">% of width</span>
+                </div>
+              </div>
+            </div>
+
+            <h3 class="h5 mt-4">Timing</h3>
+
+            <div class="row mb-3 align-items-center">
+              <div class="col-sm-8">
+                <label for="setting-alert-delay" class="col-form-label py-0">Slouch time before the alert</label>
+                <div class="form-text mt-0">How long a slouch must last without a break before the alert is raised. A shorter time reminds you sooner and more often.</div>
+              </div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-alert-delay" class="form-control" type="number" min="1" max="120" step="1" inputmode="numeric" />
+                  <span class="input-group-text">seconds</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <div class="col-sm-8">
+                <label for="setting-calibration-count" class="col-form-label py-0">Calibration countdown</label>
+                <div class="form-text mt-0">How many counts you are given to settle into the posture that becomes the reference. One count lasts about one second.</div>
+              </div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-calibration-count" class="form-control" type="number" min="1" max="10" step="1" inputmode="numeric" />
+                  <span class="input-group-text">counts</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="row mb-3 align-items-center">
+              <div class="col-sm-8">
+                <label for="setting-reads-per-second" class="col-form-label py-0">Posture readings</label>
+                <div class="form-text mt-0">How often the posture is read while the monitor runs. A higher rate answers faster and asks more of the processor.</div>
+              </div>
+              <div class="col-sm-4">
+                <div class="input-group">
+                  <input id="setting-reads-per-second" class="form-control" type="number" min="1" max="10" step="1" inputmode="numeric" />
+                  <span class="input-group-text">/ second</span>
+                </div>
+              </div>
+            </div>
+
+            <p class="form-text mb-0">The two tolerances and the slouch time act on the very next reading. A new calibration countdown applies the next time you calibrate.</p>
           </div>
           <div class="modal-footer">
             <button id="settings-restore-defaults" class="btn btn-outline-secondary" type="button" title="Put every setting of this panel back to its default">Restore defaults</button>
-            <button id="settings-cancel" class="btn btn-primary" type="button" data-bs-dismiss="modal" title="Close the Situp settings panel">Close</button>
+            <button id="settings-cancel" class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal" title="Close the Situp settings panel and change nothing">Cancel</button>
+            <button id="settings-save" class="btn btn-primary" type="button" title="Store the situp settings">Save</button>
           </div>
         </div>
       </div>
@@ -301,6 +374,21 @@
               <label for="toggle-alerts" class="form-check-label">Allow notifications and sounds</label>
             </div>
             <p class="form-text mt-0">This switch holds the notification permission of the browser and takes effect as soon as it is pressed. While it is off, no event notifies at all. While it is on, every event below notifies in the way it is set up.</p>
+
+            <div class="row g-2 align-items-center py-3 border-top">
+              <div class="col-12 col-lg-4">
+                <div>Master volume</div>
+                <div class="form-text mt-0">Turns every sound of the application down together, keeping the balance set between one event and another.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <div class="row g-2 align-items-center">
+                  <div class="col">
+                    <input id="notification-master-volume" class="form-range" type="range" min="0" max="100" step="5" aria-label="Master volume" />
+                  </div>
+                  <div class="col-2 small text-body-secondary text-end" id="notification-master-volume-value">100%</div>
+                </div>
+              </div>
+            </div>
 
             <div class="row g-2 align-items-center py-3 border-top">
               <div class="col-12 col-lg-4">

@@ -16,7 +16,9 @@ Holds everything that tells a person something has happened: the desktop notific
 - Every value read back from storage is checked against the catalogue and its range before it is used, so a setup stored by an older version of the application can never ask for a sound that no longer exists.
 - The allow notifications and sounds switch at the top of the Notification settings panel stands above the setup of every event: it holds the browser permission, takes effect as soon as it is pressed rather than on save, and while it is off no event notifies at all.
 - This folder only writes to the elements of the Notification settings panel itself. Everything else on the monitor screen belongs to `MonitorView`, including the button of the navigation bar that opens this panel.
-- The play button plays the sound whether or not the event is set to make one, because a person pressing it is tuning the sound rather than waiting for the event.
+- The play button plays the sound whether or not the event is set to make one, because a person pressing it is tuning the sound rather than waiting for the event, and it plays it at the master volume as well, so what is heard is what the event will sound like.
+- The master volume multiplies the volume of every event, and is stored on save like any other field of the Notification settings panel; only `notification_alerts.ts` applies it, in one place, so no caller has to remember it.
+- A sustained slouch and a corrected posture take, by default, the one sound built to be heard as clearly bad and the one built to be heard as clearly good: the first falls, is low and buzzes, the second rises, is high and is clear.
 - A sustained slouch keeps its own repeat and escalation timing here; the chosen sound and volume decide what is played, not how often or how much louder.
 
 ## Background
