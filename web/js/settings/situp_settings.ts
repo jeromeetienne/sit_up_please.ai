@@ -61,11 +61,13 @@ export const SITUP_SETTINGS_RANGES = {
 /**
  * The values used when the browser has nothing stored from an earlier visit.
  * They are the values the application carried as fixed constants before the
- * Situp settings panel could edit them.
+ * Situp settings panel could edit them, except the sideways tolerance, which is
+ * wider than the constant was: a person turning the head or shifting in the
+ * chair moved the face far enough sideways to be called a slouch too readily.
  */
 export const SITUP_DEFAULT_SETTINGS: SitupSettingsValues = {
 	forwardAndBackTolerance: 0.14,
-	sidewaysTolerance: 0.07,
+	sidewaysTolerance: 0.15,
 	alertDelaySec: 5,
 	calibrationCount: 3,
 	readsPerSecond: 2,
