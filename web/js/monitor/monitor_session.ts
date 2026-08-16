@@ -100,6 +100,13 @@ export class MonitorSession {
 		this.publish();
 	}
 
+	/** Switches the pomodoro timer off, whatever period it was counting down. */
+	switchPomodoroOff(): void {
+		this._pomodoroTimer.stop();
+		this._callbacks.onPomodoroNotificationDismissed();
+		this.publish();
+	}
+
 	/** Draws the screen for the first time, before anything has been watched. */
 	publish(): void {
 		this._callbacks.onUpdate(this._viewModel());

@@ -77,7 +77,7 @@ export class NotificationAlerts {
 	 * to press the footer button again every time the page loads.
 	 */
 	constructor() {
-		this._isEnabled = this.isSupported && Notification.permission === 'granted';
+		this._isEnabled = NotificationAlerts._defaultEnabled();
 	}
 
 	/** Whether this browser offers desktop notifications at all. */
@@ -114,6 +114,21 @@ export class NotificationAlerts {
 			? 'granted'
 			: await Notification.requestPermission();
 		this._isEnabled = permission === 'granted';
+		return this._isEnabled;
+	}
+
+	/**
+	 * Puts desktop alerts back to the state a fresh page load would give them:
+	 * on when the browser has already granted permission, off otherwise. Never
+	 * asks for permission, so pressing restore defaults raises no prompt.
+	 * Returns whether alerts are on after the change.
+	 */
+	restoreDefault(): boolean {
+		const isEnabled = NotificationAlerts._defaultEnabled();
+		if (isEnabled === false) {
+			this.clear();
+		}
+		this._isEnabled = isEnabled;
 		return this._isEnabled;
 	}
 
@@ -207,6 +222,11 @@ export class NotificationAlerts {
 		const wasEscalating = this._lastToneAtSec !== undefined;
 		this._lastToneAtSec = undefined;
 		if (wasEscalating) this._playToneSequence(REWARD_CHIME);
+	}
+
+	/** Whether desktop alerts start on: only when this browser already grants them. */
+	private static _defaultEnabled(): boolean {
+		return 'Notification' in window && Notification.permission === 'granted';
 	}
 
 	/** Returns which escalation stage a sustained bad posture has reached. */

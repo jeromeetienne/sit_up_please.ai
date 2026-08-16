@@ -16,6 +16,9 @@ import { ThemePreference } from './theme/theme_preference';
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+/** Whether the facial landmarks are drawn over the camera picture to begin with. */
+const DRAWS_LANDMARKS_BY_DEFAULT = true;
+
 /**
  * "Sit Up, Please" — a posture monitor that runs entirely in the browser.
  *
@@ -39,7 +42,7 @@ class Main {
 		const view = new MonitorView();
 		const alerts = new NotificationAlerts();
 		const installPrompt = new InstallPrompt();
-		let drawsLandmarks = true;
+		let drawsLandmarks = DRAWS_LANDMARKS_BY_DEFAULT;
 		const tracker = new PostureTracker(video, landmarkCanvas, drawsLandmarks);
 		const session = new MonitorSession(tracker, {
 			onUpdate: (viewModel) => view.render(viewModel),
@@ -52,6 +55,13 @@ class Main {
 
 		const settingsDialog = new SettingsDialog({
 			onSaved: (settings) => session.applyPomodoroSettings(settings),
+			onRestoreDefaults: () => {
+				drawsLandmarks = DRAWS_LANDMARKS_BY_DEFAULT;
+				tracker.setDrawsLandmarks(drawsLandmarks);
+				view.setLandmarksState(drawsLandmarks);
+				view.setAlertsState(alerts.isSupported, alerts.restoreDefault());
+				session.switchPomodoroOff();
+			},
 		});
 
 		view.bindActions({
