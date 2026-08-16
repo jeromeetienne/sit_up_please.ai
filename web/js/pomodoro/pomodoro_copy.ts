@@ -26,6 +26,34 @@ export class PomodoroCopy {
 		return `${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
 	}
 
+	/**
+	 * Returns the words on the pomodoro button of the navigation bar: the name of
+	 * the timer while it is off, the time left while a period counts down, and an
+	 * invitation to start while a finished period waits to be started by hand.
+	 *
+	 * @param runState - Where the cycle stands right now.
+	 * @param countdownText - The time left in the current period, as `MM:SS`.
+	 * @returns The words the button carries.
+	 */
+	static toggleLabel(runState: PomodoroRunState, countdownText: string): string {
+		if (runState === 'off') return 'Pomodoro';
+		if (runState === 'awaiting-start') return 'Start next period';
+		return countdownText;
+	}
+
+	/**
+	 * Returns what the pomodoro button of the navigation bar does when it is
+	 * pressed, which is what its title and its name for a screen reader say.
+	 *
+	 * @param runState - Where the cycle stands right now.
+	 * @returns The sentence that names the action of the button.
+	 */
+	static toggleTitle(runState: PomodoroRunState): string {
+		if (runState === 'off') return 'Start the pomodoro timer';
+		if (runState === 'awaiting-start') return 'Start the next pomodoro period';
+		return 'Stop the pomodoro timer';
+	}
+
 	/** Returns the one short line under the countdown. */
 	static statusText(runState: PomodoroRunState, kind: PomodoroPeriodKind): string {
 		if (runState === 'awaiting-start') return `Press start when you are ready for the ${PomodoroCopy._plainName(kind)}.`;

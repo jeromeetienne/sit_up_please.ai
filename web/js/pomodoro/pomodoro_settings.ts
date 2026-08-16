@@ -35,7 +35,7 @@ export const POMODORO_DEFAULT_SETTINGS: PomodoroSettingsValues = {
 /**
  * Reads and writes the pomodoro settings in local browser storage. Nothing on
  * the screen changes these values yet: the timer reads the defaults above, and
- * this class is the one place a later settings panel has to write to.
+ * this class is the one place the Pomodoro settings panel writes to.
  */
 export class PomodoroSettings {
 	/** Returns the stored settings, filling in every absent value from the defaults. */

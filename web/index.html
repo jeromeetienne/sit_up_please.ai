@@ -23,21 +23,19 @@
             <i class="bi bi-download" aria-hidden="true"></i>
             Install app
           </button>
-          <button id="recalibrate" class="btn btn-outline-secondary btn-sm" type="button" title="Calibrate the reference posture again">
-            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-            Recalibrate
-          </button>
-          <button id="toggle-monitoring" class="btn btn-outline-secondary btn-sm" type="button" title="Start">
-            <i class="bi bi-play-fill" id="toggle-monitoring-icon" aria-hidden="true"></i>
-            <span id="toggle-monitoring-label">Start</span>
-          </button>
           <a class="btn btn-outline-secondary btn-sm border-0" href="https://github.com/jeromeetienne/sit_up_please.ai" target="_blank" rel="noreferrer" aria-label="Sit Up, Please repository on GitHub" title="Sit Up, Please repository on GitHub">
             <i class="bi bi-github" aria-hidden="true"></i>
           </a>
           <button id="toggle-theme" class="btn btn-outline-secondary btn-sm border-0" type="button" aria-label="Theme: system" title="Theme: system">
             <i class="bi bi-circle-half" id="toggle-theme-icon" aria-hidden="true"></i>
           </button>
-          <button id="open-settings" class="btn btn-outline-secondary btn-sm border-0" type="button" aria-label="Settings" title="Settings">
+          <button id="open-pomodoro" class="btn btn-outline-secondary btn-sm border-0" type="button" aria-label="Pomodoro settings" title="Pomodoro settings">
+            <i class="bi bi-stopwatch-fill" aria-hidden="true"></i>
+          </button>
+          <button id="open-notifications" class="btn btn-outline-secondary btn-sm border-0" type="button" aria-label="Notification settings" title="Notification settings">
+            <i class="bi bi-bell-fill" aria-hidden="true"></i>
+          </button>
+          <button id="open-settings" class="btn btn-outline-secondary btn-sm border-0" type="button" aria-label="Situp settings" title="Situp settings">
             <i class="bi bi-gear-fill" aria-hidden="true"></i>
           </button>
         </div>
@@ -85,6 +83,25 @@
 
           <p id="guidance">Start the camera and I will hold you to the posture you calibrate. One line, one colour, no dashboard.</p>
           <p class="text-body-secondary fst-italic" id="verdict-meta">Nothing has been watched yet.</p>
+
+          <div class="d-flex flex-wrap gap-2 mb-3">
+            <div class="btn-group" role="group" aria-label="Posture monitoring controls">
+              <button id="recalibrate" class="btn btn-outline-secondary btn-sm" type="button" title="Calibrate the reference posture again">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                Recalibrate
+              </button>
+              <button id="toggle-monitoring" class="btn btn-outline-secondary btn-sm" type="button" title="Start">
+                <i class="bi bi-play-fill" id="toggle-monitoring-icon" aria-hidden="true"></i>
+                <span id="toggle-monitoring-label">Start</span>
+              </button>
+            </div>
+            <div class="btn-group" role="group" aria-label="Pomodoro timer controls">
+              <button id="pomodoro-toggle" class="btn btn-outline-secondary btn-sm" type="button" title="Start the pomodoro timer">
+                <i class="bi bi-play-fill" id="pomodoro-toggle-icon" aria-hidden="true"></i>
+                <span id="pomodoro-toggle-label">Pomodoro</span>
+              </button>
+            </div>
+          </div>
 
           <div id="start-block">
             <button id="start-monitoring" class="btn btn-primary" type="button" title="Start the camera and calibrate the reference posture">
@@ -163,32 +180,47 @@
     <p id="live-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
 
     <div class="modal fade" id="settings-dialog" tabindex="-1" aria-labelledby="settings-title" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
           <div class="modal-header">
-            <h2 class="modal-title h5" id="settings-title">Settings</h2>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" title="Close the settings panel"></button>
+            <h2 class="modal-title h5" id="settings-title">Situp settings</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" title="Close the Situp settings panel"></button>
           </div>
           <div class="modal-body">
-            <h3 class="h5">Camera and alerts</h3>
+            <h3 class="h5">Camera</h3>
             <div class="form-check form-switch">
               <input id="toggle-landmarks" class="form-check-input" type="checkbox" role="switch" checked />
               <label for="toggle-landmarks" class="form-check-label">Draw the facial landmarks over the picture</label>
             </div>
+            <p class="form-text mb-0">This switch takes effect as soon as it is pressed. The pomodoro timer is set up in the Pomodoro settings panel, and the notifications in the Notification settings panel.</p>
+          </div>
+          <div class="modal-footer">
+            <button id="settings-restore-defaults" class="btn btn-outline-secondary" type="button" title="Put every setting of this panel back to its default">Restore defaults</button>
+            <button id="settings-cancel" class="btn btn-primary" type="button" data-bs-dismiss="modal" title="Close the Situp settings panel">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="pomodoro-dialog" tabindex="-1" aria-labelledby="pomodoro-dialog-title" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="pomodoro-dialog-title">Pomodoro settings</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" title="Close the Pomodoro settings panel"></button>
+          </div>
+          <div class="modal-body">
             <div class="form-check form-switch">
-              <input id="toggle-alerts" class="form-check-input" type="checkbox" role="switch" disabled />
-              <label for="toggle-alerts" class="form-check-label">Show a desktop notification for a sustained slouch</label>
-            </div>
-
-            <hr class="my-4" />
-
-            <h3 class="h5">Pomodoro timer</h3>
-            <div class="form-check form-switch mb-3">
               <input id="toggle-pomodoro" class="form-check-input" type="checkbox" role="switch" />
               <label for="toggle-pomodoro" class="form-check-label">Run the pomodoro timer</label>
             </div>
+            <p class="form-text mb-3">The cycle starts as soon as this switch goes on, and stops as soon as it goes off. It takes effect at once rather than on save.</p>
+
             <div class="row mb-3 align-items-center">
-              <label for="setting-work-period" class="col-sm-8 col-form-label">Work period length</label>
+              <div class="col-sm-8">
+                <label for="setting-work-period" class="col-form-label py-0">Work period length</label>
+                <div class="form-text mt-0">How long one work period counts down before a break comes next.</div>
+              </div>
               <div class="col-sm-4">
                 <div class="input-group">
                   <input id="setting-work-period" class="form-control" type="number" min="1" max="180" step="1" />
@@ -197,7 +229,10 @@
               </div>
             </div>
             <div class="row mb-3 align-items-center">
-              <label for="setting-short-break" class="col-sm-8 col-form-label">Short break length</label>
+              <div class="col-sm-8">
+                <label for="setting-short-break" class="col-form-label py-0">Short break length</label>
+                <div class="form-text mt-0">The break that comes after every work period, except the one that earns a long break.</div>
+              </div>
               <div class="col-sm-4">
                 <div class="input-group">
                   <input id="setting-short-break" class="form-control" type="number" min="1" max="60" step="1" />
@@ -206,7 +241,10 @@
               </div>
             </div>
             <div class="row mb-3 align-items-center">
-              <label for="setting-long-break" class="col-sm-8 col-form-label">Long break length</label>
+              <div class="col-sm-8">
+                <label for="setting-long-break" class="col-form-label py-0">Long break length</label>
+                <div class="form-text mt-0">The longer break that comes instead of a short break once the set number of work periods is finished.</div>
+              </div>
               <div class="col-sm-4">
                 <div class="input-group">
                   <input id="setting-long-break" class="form-control" type="number" min="1" max="90" step="1" />
@@ -215,27 +253,186 @@
               </div>
             </div>
             <div class="row mb-3 align-items-center">
-              <label for="setting-work-periods-before-long-break" class="col-sm-8 col-form-label">Work periods before a long break</label>
+              <div class="col-sm-8">
+                <label for="setting-work-periods-before-long-break" class="col-form-label py-0">Work periods before a long break</label>
+                <div class="form-text mt-0">How many work periods are finished before a long break comes instead of a short one.</div>
+              </div>
               <div class="col-sm-4">
                 <input id="setting-work-periods-before-long-break" class="form-control" type="number" min="1" max="12" step="1" />
               </div>
             </div>
 
-            <div class="form-check form-switch mb-2">
+            <div class="form-check form-switch">
               <input id="setting-automatic-start" class="form-check-input" type="checkbox" role="switch" />
               <label for="setting-automatic-start" class="form-check-label">Start the next period automatically</label>
             </div>
+            <p class="form-text mb-3">The next period starts on its own. While this is off, a <strong>Start next period</strong> button waits beside the countdown.</p>
+
             <div class="form-check form-switch">
               <input id="setting-pause-during-break" class="form-check-input" type="checkbox" role="switch" />
               <label for="setting-pause-during-break" class="form-check-label">Pause posture monitoring during a break</label>
             </div>
+            <p class="form-text mb-0">No posture reading is taken and no slip is counted for the length of every break, because a break means leaving the chair.</p>
 
             <p class="form-text mt-3 mb-0">A period already counting down keeps the length it started with. A new length applies from the next period.</p>
           </div>
           <div class="modal-footer">
-            <button id="settings-restore-defaults" class="btn btn-outline-secondary" type="button" title="Put every setting of this panel back to its default">Restore defaults</button>
-            <button id="settings-cancel" class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal" title="Close the settings panel and change nothing">Cancel</button>
-            <button id="settings-save" class="btn btn-primary" type="button" title="Store the pomodoro parameters">Save</button>
+            <button id="pomodoro-restore-defaults" class="btn btn-outline-secondary" type="button" title="Put every setting of this panel back to its default">Restore defaults</button>
+            <button id="pomodoro-cancel" class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal" title="Close the Pomodoro settings panel and change nothing">Cancel</button>
+            <button id="pomodoro-save" class="btn btn-primary" type="button" title="Store the pomodoro parameters">Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="notification-dialog" tabindex="-1" aria-labelledby="notification-title" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h5" id="notification-title">Notification settings</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" title="Close the Notification settings panel"></button>
+          </div>
+          <div class="modal-body">
+            <div class="form-check form-switch">
+              <input id="toggle-alerts" class="form-check-input" type="checkbox" role="switch" disabled />
+              <label for="toggle-alerts" class="form-check-label">Allow notifications and sounds</label>
+            </div>
+            <p class="form-text mt-0">This switch holds the notification permission of the browser and takes effect as soon as it is pressed. While it is off, no event notifies at all. While it is on, every event below notifies in the way it is set up.</p>
+
+            <div class="row g-2 align-items-center py-3 border-top">
+              <div class="col-12 col-lg-4">
+                <div>A sustained slouch</div>
+                <div class="form-text mt-0">The posture has stayed away from the calibrated reference.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check form-switch mb-0">
+                    <input id="notification-posture-slouch-desktop" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="notification-posture-slouch-desktop" class="form-check-label">Desktop notification</label>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input id="notification-posture-slouch-sound" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="notification-posture-slouch-sound" class="form-check-label">Sound</label>
+                  </div>
+                </div>
+                <div class="row g-2 align-items-center mt-1">
+                  <div class="col-auto">
+                    <select id="notification-posture-slouch-sound-name" class="form-select form-select-sm" aria-label="Sound for a sustained slouch"></select>
+                  </div>
+                  <div class="col">
+                    <input id="notification-posture-slouch-volume" class="form-range" type="range" min="0" max="100" step="5" aria-label="Volume for a sustained slouch" />
+                  </div>
+                  <div class="col-2 small text-body-secondary text-end" id="notification-posture-slouch-volume-value">70%</div>
+                  <div class="col-auto">
+                    <button id="notification-posture-slouch-play" class="btn btn-outline-secondary btn-sm" type="button" title="Play this sound at this volume">
+                      <i class="bi bi-play-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 align-items-center py-3 border-top">
+              <div class="col-12 col-lg-4">
+                <div>A corrected posture</div>
+                <div class="form-text mt-0">The calibrated posture has been taken up again after a slouch. This event never shows a desktop notification: it only takes the notification of the slouch off the screen.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check form-switch mb-0">
+                    <input id="notification-posture-corrected-sound" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="notification-posture-corrected-sound" class="form-check-label">Sound</label>
+                  </div>
+                </div>
+                <div class="row g-2 align-items-center mt-1">
+                  <div class="col-auto">
+                    <select id="notification-posture-corrected-sound-name" class="form-select form-select-sm" aria-label="Sound for a corrected posture"></select>
+                  </div>
+                  <div class="col">
+                    <input id="notification-posture-corrected-volume" class="form-range" type="range" min="0" max="100" step="5" aria-label="Volume for a corrected posture" />
+                  </div>
+                  <div class="col-2 small text-body-secondary text-end" id="notification-posture-corrected-volume-value">40%</div>
+                  <div class="col-auto">
+                    <button id="notification-posture-corrected-play" class="btn btn-outline-secondary btn-sm" type="button" title="Play this sound at this volume">
+                      <i class="bi bi-play-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 align-items-center py-3 border-top">
+              <div class="col-12 col-lg-4">
+                <div>A finished work period</div>
+                <div class="form-text mt-0">A pomodoro work period has run out and a break comes next.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check form-switch mb-0">
+                    <input id="notification-work-period-finished-desktop" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="notification-work-period-finished-desktop" class="form-check-label">Desktop notification</label>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input id="notification-work-period-finished-sound" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="notification-work-period-finished-sound" class="form-check-label">Sound</label>
+                  </div>
+                </div>
+                <div class="row g-2 align-items-center mt-1">
+                  <div class="col-auto">
+                    <select id="notification-work-period-finished-sound-name" class="form-select form-select-sm" aria-label="Sound for a finished work period"></select>
+                  </div>
+                  <div class="col">
+                    <input id="notification-work-period-finished-volume" class="form-range" type="range" min="0" max="100" step="5" aria-label="Volume for a finished work period" />
+                  </div>
+                  <div class="col-2 small text-body-secondary text-end" id="notification-work-period-finished-volume-value">60%</div>
+                  <div class="col-auto">
+                    <button id="notification-work-period-finished-play" class="btn btn-outline-secondary btn-sm" type="button" title="Play this sound at this volume">
+                      <i class="bi bi-play-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 align-items-center py-3 border-top">
+              <div class="col-12 col-lg-4">
+                <div>A finished break</div>
+                <div class="form-text mt-0">A pomodoro break has run out and a work period comes next.</div>
+              </div>
+              <div class="col-12 col-lg-8">
+                <div class="d-flex flex-wrap gap-3">
+                  <div class="form-check form-switch mb-0">
+                    <input id="notification-break-finished-desktop" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="notification-break-finished-desktop" class="form-check-label">Desktop notification</label>
+                  </div>
+                  <div class="form-check form-switch mb-0">
+                    <input id="notification-break-finished-sound" class="form-check-input" type="checkbox" role="switch" />
+                    <label for="notification-break-finished-sound" class="form-check-label">Sound</label>
+                  </div>
+                </div>
+                <div class="row g-2 align-items-center mt-1">
+                  <div class="col-auto">
+                    <select id="notification-break-finished-sound-name" class="form-select form-select-sm" aria-label="Sound for a finished break"></select>
+                  </div>
+                  <div class="col">
+                    <input id="notification-break-finished-volume" class="form-range" type="range" min="0" max="100" step="5" aria-label="Volume for a finished break" />
+                  </div>
+                  <div class="col-2 small text-body-secondary text-end" id="notification-break-finished-volume-value">60%</div>
+                  <div class="col-auto">
+                    <button id="notification-break-finished-play" class="btn btn-outline-secondary btn-sm" type="button" title="Play this sound at this volume">
+                      <i class="bi bi-play-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <p class="form-text mb-0">A sustained slouch plays its sound again and again while the slouch continues, growing louder the longer it lasts, whichever sound and volume it is set to.</p>
+          </div>
+          <div class="modal-footer">
+            <button id="notification-restore-defaults" class="btn btn-outline-secondary" type="button" title="Put every event of this panel back to its default notification">Restore defaults</button>
+            <button id="notification-cancel" class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal" title="Close the Notification settings panel and change nothing">Cancel</button>
+            <button id="notification-save" class="btn btn-primary" type="button" title="Store the notification of every event">Save</button>
           </div>
         </div>
       </div>

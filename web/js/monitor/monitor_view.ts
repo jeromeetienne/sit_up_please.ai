@@ -25,7 +25,8 @@ export type MonitorActions = {
 	onToggleMonitoring: () => void;
 	onTogglePomodoro: () => void;
 	onOpenSettings: () => void;
-	onToggleAlerts: () => void;
+	onOpenNotifications: () => void;
+	onOpenPomodoro: () => void;
 	onToggleLandmarks: () => void;
 	onCycleTheme: () => void;
 	onInstall: () => void;
@@ -68,12 +69,16 @@ export class MonitorView {
 	private readonly _ribbonBars = MonitorView._require<HTMLElement>('ribbon-bars');
 	private readonly _installButton = MonitorView._require<HTMLButtonElement>('install-app');
 	private readonly _landmarksSwitch = MonitorView._require<HTMLInputElement>('toggle-landmarks');
-	private readonly _alertsSwitch = MonitorView._require<HTMLInputElement>('toggle-alerts');
 	private readonly _themeButton = MonitorView._require<HTMLButtonElement>('toggle-theme');
 	private readonly _themeIcon = MonitorView._require<HTMLElement>('toggle-theme-icon');
 	private readonly _settingsButton = MonitorView._require<HTMLButtonElement>('open-settings');
+	private readonly _notificationsButton = MonitorView._require<HTMLButtonElement>('open-notifications');
+	private readonly _pomodoroButton = MonitorView._require<HTMLButtonElement>('open-pomodoro');
 	private readonly _pomodoroSwitch = MonitorView._require<HTMLInputElement>('toggle-pomodoro');
 	private readonly _pomodoroStartNextButton = MonitorView._require<HTMLButtonElement>('pomodoro-start-next');
+	private readonly _pomodoroToggleButton = MonitorView._require<HTMLButtonElement>('pomodoro-toggle');
+	private readonly _pomodoroToggleIcon = MonitorView._require<HTMLElement>('pomodoro-toggle-icon');
+	private readonly _pomodoroToggleLabel = MonitorView._require<HTMLElement>('pomodoro-toggle-label');
 	private readonly _recalibrateButton = MonitorView._require<HTMLButtonElement>('recalibrate');
 	private readonly _monitoringButton = MonitorView._require<HTMLButtonElement>('toggle-monitoring');
 	private readonly _monitoringIcon = MonitorView._require<HTMLElement>('toggle-monitoring-icon');
@@ -95,17 +100,13 @@ export class MonitorView {
 		this._monitoringButton.addEventListener('click', actions.onToggleMonitoring);
 		this._pomodoroSwitch.addEventListener('change', actions.onTogglePomodoro);
 		this._pomodoroStartNextButton.addEventListener('click', actions.onTogglePomodoro);
+		this._pomodoroToggleButton.addEventListener('click', actions.onTogglePomodoro);
 		this._settingsButton.addEventListener('click', actions.onOpenSettings);
-		this._alertsSwitch.addEventListener('change', actions.onToggleAlerts);
+		this._notificationsButton.addEventListener('click', actions.onOpenNotifications);
+		this._pomodoroButton.addEventListener('click', actions.onOpenPomodoro);
 		this._landmarksSwitch.addEventListener('change', actions.onToggleLandmarks);
 		this._themeButton.addEventListener('click', actions.onCycleTheme);
 		this._installButton.addEventListener('click', actions.onInstall);
-	}
-
-	/** Turns the desktop alert switch of the settings panel on, and sets its position. */
-	setAlertsState(isSupported: boolean, isEnabled: boolean): void {
-		this._alertsSwitch.disabled = isSupported === false;
-		this._alertsSwitch.checked = isEnabled;
 	}
 
 	/** Shows or hides the install button, following the browser's own install-prompt availability. */
@@ -113,7 +114,7 @@ export class MonitorView {
 		this._installButton.hidden = isAvailable === false;
 	}
 
-	/** Puts the landmark-overlay switch of the settings panel in its current position. */
+	/** Puts the landmark-overlay switch of the Situp settings panel in its current position. */
 	setLandmarksState(isEnabled: boolean): void {
 		this._landmarksSwitch.checked = isEnabled;
 	}
@@ -163,6 +164,7 @@ export class MonitorView {
 		this._pomodoroStatus.textContent = viewModel.pomodoro.statusText;
 		this._pomodoroSwitch.checked = viewModel.pomodoro.isOn;
 		this._pomodoroStartNextButton.hidden = viewModel.pomodoro.isAwaitingStart === false;
+		this._renderPomodoroToggle(viewModel);
 
 		this._startBlock.hidden = viewModel.isIdle === false;
 		this._figures.hidden = viewModel.isLive === false;
@@ -185,6 +187,20 @@ export class MonitorView {
 	//	Helpers
 	///////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////
+
+	/**
+	 * Writes the pomodoro button of the navigation bar. The one button covers the
+	 * three things the timer can be asked to do, because a press means whichever
+	 * of them the cycle is standing in front of: start the cycle, start a period
+	 * waiting to be started by hand, or switch the timer off.
+	 */
+	private _renderPomodoroToggle(viewModel: MonitorViewModel): void {
+		const isCountingDown = viewModel.pomodoro.isOn && viewModel.pomodoro.isAwaitingStart === false;
+		this._pomodoroToggleIcon.className = isCountingDown ? 'bi bi-stop-fill' : 'bi bi-play-fill';
+		this._pomodoroToggleLabel.textContent = viewModel.pomodoro.toggleLabel;
+		this._pomodoroToggleButton.title = viewModel.pomodoro.toggleTitle;
+		this._pomodoroToggleButton.setAttribute('aria-label', viewModel.pomodoro.toggleTitle);
+	}
 
 	/** Writes the posture state as the Bootstrap contextual colour of the verdict. */
 	private _applyStateColour(viewModel: MonitorViewModel): void {

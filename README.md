@@ -13,9 +13,10 @@ The initial implementation provides:
 - an eight-second calibration that stores a reference posture in the browser;
 - posture analysis at 30 frames per second;
 - an immediate in-page reminder when posture moves away from the calibrated reference;
-- recalibration and pause-monitoring controls;
-- a pomodoro timer on the same page, with its own notification and its own tone; and
-- a settings panel for the pomodoro parameters.
+- recalibration and pause-monitoring controls in the posture column;
+- a pomodoro timer on the same page, with its own notification and its own tone;
+- a Pomodoro settings panel for the pomodoro parameters, and a Situp settings panel for the camera; and
+- a Notification settings panel that sets up every event on its own: whether it shows a desktop notification, whether it plays a sound, which sound, and how loud.
 
 Browser notifications are optional. If the browser does not support them or the person does not grant permission, the in-page reminder still works.
 
@@ -45,29 +46,37 @@ The build performs strict TypeScript checking and creates a production bundle in
 
 ## Interface
 
-The interface is plain [Bootstrap](https://getbootstrap.com/) 5. The navigation bar, the cards, the buttons, the alert that carries the posture verdict, the stacked progress bar that carries the session history and the settings modal are all Bootstrap components with their own appearance, and the layout is the Bootstrap grid.
+The interface is plain [Bootstrap](https://getbootstrap.com/) 5. The navigation bar, the cards, the buttons, the alert that carries the posture verdict, the stacked progress bar that carries the session history, the Situp settings modal, the Pomodoro settings modal and the Notification settings modal are all Bootstrap components with their own appearance, and the layout is the Bootstrap grid.
 
 The whole stylesheet is `web/css/style.scss`: it imports Bootstrap and adds three rules, which are the ones Bootstrap has no class for. There are no design tokens, no palette and no typeface of this project's own, so the page can be changed by swapping Bootstrap classes in `web/index.html` rather than by writing style rules.
 
 Colour that carries meaning uses the Bootstrap contextual colours: `success` while the calibrated posture is held, `danger` while it is lost, `secondary` while it is unknown.
 
+The controls that act on a session sit in the posture column, under the verdict, as two Bootstrap button groups: **Recalibrate** and the start-and-pause button for posture monitoring, then the **Pomodoro** button for the timer. The navigation bar keeps only what acts on the application as a whole: the install button, the repository link, the theme button and the three buttons that open the Situp settings panel, the Pomodoro settings panel and the Notification settings panel.
+
 ## Pomodoro timer
 
 The pomodoro timer runs on the same page as the posture monitor. It counts a work period, then a short break, and a long break instead of the short one once the set number of work periods is finished. The timer keeps counting whether or not posture monitoring is reading the camera.
 
-Switch **Run the pomodoro timer** on in the settings panel to start the cycle, and off to stop it. When a period has finished and automatic start is switched off, a **Start next period** button appears beside the countdown. The period name, the time left and one status line appear above the session figures.
+The **Pomodoro** button in the posture column, beside the posture monitoring controls, runs the timer. One button covers the three things the timer can be asked to do, because a press means whichever of them the cycle is standing in front of:
+
+- while the timer is off it reads **Pomodoro** and starts the cycle;
+- while a period counts down it reads the time left and stops the timer; and
+- while a finished period waits to be started by hand it reads **Start next period** and starts that period.
+
+The switch **Run the pomodoro timer** in the Pomodoro settings panel does the same as the first two of those. The period name, the time left and one status line also appear above the session figures, with their own **Start next period** button beside the countdown.
 
 **Notification when a period finishes**
 
 - The page shows the name of the next period and its countdown.
 - A desktop notification names the period that has just finished and says what comes next, with its length. It carries a notification tag of its own, so a finished period and a posture reminder never replace one another on the screen.
-- A tone plays: a falling two-note tone at the end of a work period, and a rising one at the end of a break. Neither tone repeats or grows stronger, because a period ending is one event rather than a condition that continues. A posture alert already sounding is closed first, without the reward chime.
+- A sound plays: a falling two-note sound at the end of a work period, and a rising one at the end of a break. Neither sound repeats or grows stronger, because a period ending is one event rather than a condition that continues. A posture alert already sounding is closed first, without the reward chime.
 
-Desktop notifications for the pomodoro timer follow the same **Show a desktop notification for a sustained slouch** setting in the settings panel as the posture reminder.
+Whether a finished work period and a finished break show a desktop notification, whether they play a sound, which sound and how loud, are all set in the Notification settings panel described under [Notifications](#notifications) below. The desktop notification and the sound both also need the **Allow notifications and sounds** setting at the top of that same Notification settings panel to be on, because that setting holds the browser notification permission for the whole application.
 
 **Parameters**
 
-Select **Settings** in the navigation bar to edit them. They are stored in this browser and are read again on the next visit.
+Select **Pomodoro settings** in the navigation bar to edit them. Every parameter carries a short description under its name in the panel. They are stored in this browser and are read again on the next visit.
 
 | Parameter | Default |
 | --- | --- |
@@ -82,9 +91,46 @@ A period already counting down keeps the length it started with, so a change nev
 
 **Restore defaults**
 
-Select **Restore defaults** in the settings panel to put every setting of the panel back to its default, not only the pomodoro parameters. It draws the facial landmarks over the picture again, puts the desktop notification setting back to where a fresh page load would put it — on when this browser has already granted notification permission, off otherwise, and never asking for permission — and switches the pomodoro timer off. The pomodoro parameters return to the defaults in the table above in the fields of the panel, and are only stored once **Save** is selected, so **Cancel** still leaves the stored parameters as they were.
+Select **Restore defaults** in the Pomodoro settings panel to put every setting of the panel back to its default: the timer is switched off, and the parameters return to the defaults in the table above in the fields of the panel. As with any other edit, the parameters are only stored once **Save** is selected, so **Cancel** still leaves the stored parameters as they were.
+
+Each of the three panels restores its own defaults. **Restore defaults** in the Situp settings panel draws the facial landmarks over the picture again, and **Restore defaults** in the Notification settings panel is described under [Notifications](#notifications) below.
 
 While **Pause posture monitoring during a break** is on, the page reads **On a break.** for the length of every break, no posture reading is taken, and no slip is counted. A break means leaving the chair, so a slouch reminder and a lost face would both fire for no reason.
+
+## Notifications
+
+Select **Notification settings** in the navigation bar to open the Notification settings panel. It sets up each of the four events of the application on its own, so a person who wants a sound for a finished work period and nothing at all for a corrected posture can say exactly that. The setup is stored in this browser and is read again on the next visit.
+
+Each event carries:
+
+- a switch for a desktop notification;
+- a switch for a sound;
+- a list of the sounds the application can play;
+- a slider for the volume of that sound, from 0 to 100 per cent; and
+- a play button, which plays the chosen sound at the chosen volume so it can be heard while it is being chosen. The play button plays the sound whether or not the event is set to make one, because a person pressing it is tuning the sound rather than waiting for the event.
+
+| Event | Desktop notification | Sound | Volume |
+| --- | --- | --- | --- |
+| A sustained slouch | on | Urgent triple | 70% |
+| A corrected posture | never | Rising three-note chime | 40% |
+| A finished work period | on | Falling two-note | 60% |
+| A finished break | on | Rising two-note | 60% |
+
+A corrected posture never shows a desktop notification: it only takes the notification of the slouch off the screen, so a notification of its own would announce the end of something the person has already put right.
+
+The sounds are **Rising two-note**, **Falling two-note**, **Rising three-note chime**, **Falling three-note chime**, **Urgent triple**, **Single beep** and **Low double knock**. They are all played by the browser itself rather than read from a sound file, so nothing has to be downloaded and the panel works offline.
+
+A sustained slouch plays its sound again and again for as long as the slouch continues, growing louder the longer it lasts, whichever sound and volume it is set to. The chosen sound and volume decide what is played; they do not change how often it repeats.
+
+The **Allow notifications and sounds** switch at the top of the panel stands above every event below it: while it is off, no event notifies at all. It is the switch that holds the browser notification permission, and it takes effect as soon as it is pressed rather than on save.
+
+Select **Restore defaults** in the Notification settings panel to put every event back to the table above, and the **Allow notifications and sounds** switch back to where a fresh page load would put it — on when this browser has already granted notification permission, off otherwise, and never asking for permission. The events are only stored once **Save** is selected, so **Cancel** still leaves the stored setup as it was.
+
+## Situp settings
+
+Select **Situp settings** in the navigation bar to open the Situp settings panel. It carries the camera settings, which is at present the single switch **Draw the facial landmarks over the picture**. The switch takes effect as soon as it is pressed, so the panel has no save button and closing it changes nothing further. Select **Restore defaults** to draw the facial landmarks over the picture again.
+
+The pomodoro parameters and the notification setup each have a panel of their own, described under [Pomodoro timer](#pomodoro-timer) and [Notifications](#notifications) above.
 
 ## Light theme and dark theme
 
