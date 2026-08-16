@@ -12,8 +12,10 @@ The initial implementation provides:
 - on-device facial landmark detection with an optional full-face mesh overlay;
 - an eight-second calibration that stores a reference posture in the browser;
 - posture analysis at 30 frames per second;
-- an immediate in-page reminder when posture moves away from the calibrated reference; and
-- recalibration and pause-monitoring controls.
+- an immediate in-page reminder when posture moves away from the calibrated reference;
+- recalibration and pause-monitoring controls;
+- a pomodoro timer on the same page, with its own notification and its own tone; and
+- a settings panel for the pomodoro parameters.
 
 Browser notifications are optional. If the browser does not support them or the person does not grant permission, the in-page reminder still works.
 
@@ -40,6 +42,37 @@ npm run build
 ```
 
 The build performs strict TypeScript checking and creates a production bundle in `dist/`.
+
+## Pomodoro timer
+
+The pomodoro timer runs on the same page as the posture monitor. It counts a work period, then a short break, and a long break instead of the short one once the set number of work periods is finished. The timer keeps counting whether or not posture monitoring is reading the camera.
+
+Select **Pomodoro** in the footer to start the cycle. The same button stops the timer while a period is counting down, and starts the next period when one has finished and automatic start is switched off. The period name, the time left and one status line appear above the session figures.
+
+**Notification when a period finishes**
+
+- The page shows the name of the next period and its countdown.
+- A desktop notification names the period that has just finished and says what comes next, with its length. It carries a notification tag of its own, so a finished period and a posture reminder never replace one another on the screen.
+- A tone plays: a falling two-note tone at the end of a work period, and a rising one at the end of a break. Neither tone repeats or grows stronger, because a period ending is one event rather than a condition that continues. A posture alert already sounding is closed first, without the reward chime.
+
+Desktop notifications for the pomodoro timer follow the same **Desktop alerts** setting in the footer as the posture reminder.
+
+**Parameters**
+
+Select **Settings** in the footer to edit them. They are stored in this browser and are read again on the next visit.
+
+| Parameter | Default |
+| --- | --- |
+| Work period length | 25 minutes |
+| Short break length | 5 minutes |
+| Long break length | 15 minutes |
+| Work periods before a long break | 4 |
+| Start the next period automatically | off |
+| Pause posture monitoring during a break | on |
+
+A period already counting down keeps the length it started with, so a change never moves the finishing line of the period the person is in the middle of. A new length applies from the next period.
+
+While **Pause posture monitoring during a break** is on, the page reads **On a break.** for the length of every break, no posture reading is taken, and no slip is counted. A break means leaving the chair, so a slouch reminder and a lost face would both fire for no reason.
 
 ## Progressive web application support
 
