@@ -15,15 +15,41 @@ type CatalogueEntry = {
 };
 
 /**
- * Every sound of the catalogue. They all carry the same peak loudness, so the
- * volume of an event means the same thing whichever sound the event is set to,
- * and they differ only in their notes and their pace.
+ * Every sound of the catalogue. They all sound about equally loud, so the volume
+ * of an event means the same thing whichever sound the event is set to: a rough
+ * wave carries more energy than a smooth one at the same peak, so its peak is
+ * set lower to make up for it.
+ *
+ * The first two sounds are the pair a person hears most. They are built to be
+ * told apart without looking at the screen and without learning them first: the
+ * warning falls, is low, and buzzes, while the reward rises, is high, and is
+ * clear. Falling and low and rough is heard as something going wrong in every
+ * culture; rising and high and clean is heard as something going right.
  */
 const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
+	'low-descending-buzz': {
+		label: 'Low descending buzz (clearly bad)',
+		tone: {
+			frequencies: [311, 233, 156],
+			waveform: 'sawtooth',
+			peakGain: 0.14,
+			noteDurationSec: 0.16,
+		},
+	},
+	'bright-rising-arpeggio': {
+		label: 'Bright rising arpeggio (clearly good)',
+		tone: {
+			frequencies: [523, 659, 784, 1047],
+			waveform: 'triangle',
+			peakGain: 0.2,
+			noteDurationSec: 0.1,
+		},
+	},
 	'rising-two-note': {
 		label: 'Rising two-note',
 		tone: {
 			frequencies: [660, 880],
+			waveform: 'sine',
 			peakGain: 0.25,
 			noteDurationSec: 0.15,
 		},
@@ -32,6 +58,7 @@ const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
 		label: 'Falling two-note',
 		tone: {
 			frequencies: [880, 660],
+			waveform: 'sine',
 			peakGain: 0.25,
 			noteDurationSec: 0.15,
 		},
@@ -40,6 +67,7 @@ const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
 		label: 'Rising three-note chime',
 		tone: {
 			frequencies: [523, 659, 784],
+			waveform: 'sine',
 			peakGain: 0.25,
 			noteDurationSec: 0.12,
 		},
@@ -48,6 +76,7 @@ const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
 		label: 'Falling three-note chime',
 		tone: {
 			frequencies: [784, 659, 523],
+			waveform: 'sine',
 			peakGain: 0.25,
 			noteDurationSec: 0.12,
 		},
@@ -56,6 +85,7 @@ const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
 		label: 'Urgent triple',
 		tone: {
 			frequencies: [740, 1000, 1300],
+			waveform: 'sine',
 			peakGain: 0.25,
 			noteDurationSec: 0.09,
 		},
@@ -64,6 +94,7 @@ const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
 		label: 'Single beep',
 		tone: {
 			frequencies: [880],
+			waveform: 'sine',
 			peakGain: 0.25,
 			noteDurationSec: 0.2,
 		},
@@ -72,6 +103,7 @@ const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
 		label: 'Low double knock',
 		tone: {
 			frequencies: [196, 196],
+			waveform: 'sine',
 			peakGain: 0.25,
 			noteDurationSec: 0.11,
 		},

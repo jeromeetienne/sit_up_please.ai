@@ -1,4 +1,9 @@
-import type { NotificationEventKind, NotificationEventSettings, NotificationSettingsValues } from './notification_types';
+import type {
+	NotificationEventKind,
+	NotificationEventSettings,
+	NotificationEventSettingsValues,
+	NotificationSettingsValues,
+} from './notification_types';
 import { NotificationSounds } from './notification_sounds';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -26,35 +31,39 @@ export const NOTIFICATION_EVENT_KINDS: NotificationEventKind[] = [
 export const EVENTS_WITHOUT_DESKTOP_NOTIFICATION: NotificationEventKind[] = ['posture-corrected'];
 
 /**
- * The setup used when the browser has nothing stored from an earlier visit. It
- * is the behaviour the application had before the notification panel existed:
- * every event notifies, and each one carries a sound of its own so the reason
- * for a sound is never in doubt.
+ * The setup used when the browser has nothing stored from an earlier visit:
+ * every event notifies, the master volume is full, and each event carries a
+ * sound of its own so the reason for a sound is never in doubt. A sustained
+ * slouch and a corrected posture take the two sounds built to be told apart at
+ * once, the first clearly bad and the second clearly good.
  */
 export const NOTIFICATION_DEFAULT_SETTINGS: NotificationSettingsValues = {
-	'posture-slouch': {
-		showsDesktopNotification: true,
-		playsSound: true,
-		soundName: 'urgent-triple',
-		volume: 0.7,
-	},
-	'posture-corrected': {
-		showsDesktopNotification: false,
-		playsSound: true,
-		soundName: 'rising-three-note-chime',
-		volume: 0.4,
-	},
-	'work-period-finished': {
-		showsDesktopNotification: true,
-		playsSound: true,
-		soundName: 'falling-two-note',
-		volume: 0.6,
-	},
-	'break-finished': {
-		showsDesktopNotification: true,
-		playsSound: true,
-		soundName: 'rising-two-note',
-		volume: 0.6,
+	masterVolume: 1,
+	events: {
+		'posture-slouch': {
+			showsDesktopNotification: true,
+			playsSound: true,
+			soundName: 'low-descending-buzz',
+			volume: 0.7,
+		},
+		'posture-corrected': {
+			showsDesktopNotification: false,
+			playsSound: true,
+			soundName: 'bright-rising-arpeggio',
+			volume: 0.4,
+		},
+		'work-period-finished': {
+			showsDesktopNotification: true,
+			playsSound: true,
+			soundName: 'falling-two-note',
+			volume: 0.6,
+		},
+		'break-finished': {
+			showsDesktopNotification: true,
+			playsSound: true,
+			soundName: 'rising-two-note',
+			volume: 0.6,
+		},
 	},
 };
 
@@ -70,7 +79,7 @@ export class NotificationSettings {
 		try {
 			const stored = localStorage.getItem(SETTINGS_STORAGE_KEY);
 			if (stored === null) return NotificationSettings.copyOf(NOTIFICATION_DEFAULT_SETTINGS);
-			const parsed = JSON.parse(stored) as Partial<Record<NotificationEventKind, unknown>>;
+			const parsed = JSON.parse(stored) as unknown;
 			return NotificationSettings._sanitised(parsed);
 		} catch {
 			return NotificationSettings.copyOf(NOTIFICATION_DEFAULT_SETTINGS);
@@ -99,11 +108,14 @@ export class NotificationSettings {
 	 * @returns A copy holding one new entry per event.
 	 */
 	static copyOf(settings: NotificationSettingsValues): NotificationSettingsValues {
-		const copy = {} as NotificationSettingsValues;
+		const events = {} as NotificationEventSettingsValues;
 		for (const eventKind of NOTIFICATION_EVENT_KINDS) {
-			copy[eventKind] = { ...settings[eventKind] };
+			events[eventKind] = { ...settings.events[eventKind] };
 		}
-		return copy;
+		return {
+			masterVolume: settings.masterVolume,
+			events: events,
+		};
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
@@ -112,16 +124,40 @@ export class NotificationSettings {
 	///////////////////////////////////////////////////////////////////////////////
 	///////////////////////////////////////////////////////////////////////////////
 
-	/** Returns one usable setup built from stored values and the defaults. */
-	private static _sanitised(parsed: Partial<Record<NotificationEventKind, unknown>>): NotificationSettingsValues {
-		const settings = {} as NotificationSettingsValues;
+	/**
+	 * Returns one usable setup built from stored values and the defaults. A setup
+	 * stored before the master volume existed holds one entry per event at its top
+	 * level instead of an events entry, and is read just as well: its events are
+	 * kept and the master volume takes its default.
+	 */
+	private static _sanitised(parsed: unknown): NotificationSettingsValues {
+		if (parsed === null || typeof parsed !== 'object') return NotificationSettings.copyOf(NOTIFICATION_DEFAULT_SETTINGS);
+		const values = parsed as Partial<NotificationSettingsValues>;
+		const storedEvents = (values.events === null || typeof values.events !== 'object'
+			? parsed
+			: values.events) as Partial<Record<NotificationEventKind, unknown>>;
+
+		const events = {} as NotificationEventSettingsValues;
 		for (const eventKind of NOTIFICATION_EVENT_KINDS) {
-			settings[eventKind] = NotificationSettings._sanitisedEvent(
-				parsed[eventKind],
-				NOTIFICATION_DEFAULT_SETTINGS[eventKind],
+			events[eventKind] = NotificationSettings._sanitisedEvent(
+				storedEvents[eventKind],
+				NOTIFICATION_DEFAULT_SETTINGS.events[eventKind],
 			);
 		}
-		return settings;
+
+		return {
+			masterVolume: NotificationSettings._sanitisedVolume(
+				values.masterVolume,
+				NOTIFICATION_DEFAULT_SETTINGS.masterVolume,
+			),
+			events: events,
+		};
+	}
+
+	/** Returns one volume held inside 0 to 1, or its default when the stored value is no usable number. */
+	private static _sanitisedVolume(stored: unknown, fallback: number): number {
+		if (typeof stored !== 'number' || Number.isFinite(stored) === false) return fallback;
+		return Math.min(1, Math.max(0, stored));
 	}
 
 	/** Returns one usable event entry built from a stored value and its default. */
@@ -129,9 +165,7 @@ export class NotificationSettings {
 		if (stored === null || typeof stored !== 'object') return { ...fallback };
 		const values = stored as Partial<NotificationEventSettings>;
 
-		const volume = typeof values.volume === 'number' && Number.isFinite(values.volume)
-			? Math.min(1, Math.max(0, values.volume))
-			: fallback.volume;
+		const volume = NotificationSettings._sanitisedVolume(values.volume, fallback.volume);
 
 		return {
 			showsDesktopNotification: typeof values.showsDesktopNotification === 'boolean'
