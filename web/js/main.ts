@@ -9,6 +9,7 @@ import { MonitorView } from './monitor/monitor_view';
 import { NotificationAlerts } from './notifications/notification_alerts';
 import { OfflineSupport } from './pwa/offline_support';
 import { PostureTracker } from './posture/posture_tracker';
+import { SettingsDialog } from './settings/settings_dialog';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,6 +45,12 @@ class Main {
 			onAlertRaised: (content) => alerts.show(content),
 			onAlertTick: (badRunSec) => alerts.escalate(badRunSec),
 			onAlertCleared: () => alerts.clear(),
+			onPomodoroPeriodFinished: (content, toneKind) => alerts.announcePomodoro(content, toneKind),
+			onPomodoroNotificationDismissed: () => alerts.clearPomodoro(),
+		});
+
+		const settingsDialog = new SettingsDialog({
+			onSaved: (settings) => session.applyPomodoroSettings(settings),
 		});
 
 		view.bindActions({
@@ -58,6 +65,11 @@ class Main {
 				session.beginCalibration();
 			},
 			onToggleMonitoring: () => session.toggleMonitoring(),
+			onTogglePomodoro: () => {
+				alerts.prepareAudio();
+				session.togglePomodoro();
+			},
+			onOpenSettings: () => settingsDialog.open(),
 			onToggleAlerts: () => {
 				void alerts.setEnabled(alerts.isEnabled === false).then((isEnabled) => {
 					view.setAlertsState(alerts.isSupported, isEnabled);

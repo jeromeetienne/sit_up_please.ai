@@ -15,6 +15,8 @@ export type MonitorActions = {
 	onStart: () => void;
 	onRecalibrate: () => void;
 	onToggleMonitoring: () => void;
+	onTogglePomodoro: () => void;
+	onOpenSettings: () => void;
 	onToggleAlerts: () => void;
 	onToggleLandmarks: () => void;
 	onInstall: () => void;
@@ -43,6 +45,10 @@ export class MonitorView {
 	private readonly _postureHead = MonitorView._require<SVGCircleElement>('posture-head');
 	private readonly _startBlock = MonitorView._require<HTMLElement>('start-block');
 	private readonly _startButton = MonitorView._require<HTMLButtonElement>('start-monitoring');
+	private readonly _pomodoro = MonitorView._require<HTMLElement>('pomodoro');
+	private readonly _pomodoroLabel = MonitorView._require<HTMLElement>('pomodoro-label');
+	private readonly _pomodoroCountdown = MonitorView._require<HTMLElement>('pomodoro-countdown');
+	private readonly _pomodoroStatus = MonitorView._require<HTMLElement>('pomodoro-status');
 	private readonly _figures = MonitorView._require<HTMLElement>('figures');
 	private readonly _uprightValue = MonitorView._require<HTMLElement>('upright-value');
 	private readonly _slipsValue = MonitorView._require<HTMLElement>('slips-value');
@@ -57,6 +63,9 @@ export class MonitorView {
 	private readonly _alertsButton = MonitorView._require<HTMLButtonElement>('toggle-alerts');
 	private readonly _alertsIcon = MonitorView._require<HTMLElement>('toggle-alerts-icon');
 	private readonly _alertsLabel = MonitorView._require<HTMLElement>('toggle-alerts-label');
+	private readonly _settingsButton = MonitorView._require<HTMLButtonElement>('open-settings');
+	private readonly _pomodoroButton = MonitorView._require<HTMLButtonElement>('toggle-pomodoro');
+	private readonly _pomodoroButtonLabel = MonitorView._require<HTMLElement>('toggle-pomodoro-label');
 	private readonly _recalibrateButton = MonitorView._require<HTMLButtonElement>('recalibrate');
 	private readonly _monitoringButton = MonitorView._require<HTMLButtonElement>('toggle-monitoring');
 	private readonly _monitoringIcon = MonitorView._require<HTMLElement>('toggle-monitoring-icon');
@@ -76,6 +85,8 @@ export class MonitorView {
 		this._startButton.addEventListener('click', actions.onStart);
 		this._recalibrateButton.addEventListener('click', actions.onRecalibrate);
 		this._monitoringButton.addEventListener('click', actions.onToggleMonitoring);
+		this._pomodoroButton.addEventListener('click', actions.onTogglePomodoro);
+		this._settingsButton.addEventListener('click', actions.onOpenSettings);
 		this._alertsButton.addEventListener('click', actions.onToggleAlerts);
 		this._landmarksButton.addEventListener('click', actions.onToggleLandmarks);
 		this._installButton.addEventListener('click', actions.onInstall);
@@ -118,6 +129,12 @@ export class MonitorView {
 		this._postureSpine.setAttribute('d', viewModel.spinePath);
 		this._postureHead.setAttribute('cx', viewModel.headX.toFixed(1));
 		this._postureHead.setAttribute('cy', viewModel.headY.toFixed(1));
+
+		this._pomodoro.hidden = viewModel.pomodoro.isActive === false;
+		this._pomodoroLabel.textContent = viewModel.pomodoro.periodLabel;
+		this._pomodoroCountdown.textContent = viewModel.pomodoro.countdownText;
+		this._pomodoroStatus.textContent = viewModel.pomodoro.statusText;
+		this._pomodoroButtonLabel.textContent = viewModel.pomodoro.toggleLabel;
 
 		this._startBlock.hidden = viewModel.isIdle === false;
 		this._figures.hidden = viewModel.isLive === false;

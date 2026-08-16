@@ -1,3 +1,4 @@
+import type { PomodoroAlertContent, PomodoroToneKind } from '../pomodoro/pomodoro_types';
 import type { PostureAlertContent } from '../monitor/monitor_types';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -7,6 +8,12 @@ import type { PostureAlertContent } from '../monitor/monitor_types';
 ///////////////////////////////////////////////////////////////////////////////
 
 const NOTIFICATION_TAG = 'sit-up-please-posture-reminder';
+
+/**
+ * A tag of its own, so a finished pomodoro period never replaces a posture
+ * reminder already on the screen, and never gets replaced by one either.
+ */
+const POMODORO_NOTIFICATION_TAG = 'sit-up-please-pomodoro-period';
 
 /** One tone's shape: the notes it plays, how loud, and how long each note lasts. */
 type ToneSequence = {
@@ -29,6 +36,17 @@ const ALERT_TONE_STAGES: ToneSequence[] = [
 /** The pleasant chime that plays once a sustained bad posture is corrected. */
 const REWARD_CHIME: ToneSequence = { frequencies: [523, 659, 784], peakGain: 0.1, noteDurationSec: 0.12 };
 
+/**
+ * The tone that plays when a pomodoro period finishes. Neither tone escalates:
+ * a period ending is one event, not a condition that continues. The two tones
+ * are also plainly different from the posture alert tone and from the reward
+ * chime, so the reason for a sound is never in doubt.
+ */
+const POMODORO_TONES: Record<PomodoroToneKind, ToneSequence> = {
+	'work-finished': { frequencies: [440, 330], peakGain: 0.18, noteDurationSec: 0.22 },
+	'break-finished': { frequencies: [523, 784], peakGain: 0.18, noteDurationSec: 0.18 },
+};
+
 /** The bad-posture seconds at which each later stage takes over from the last. */
 const ALERT_STAGE_BOUNDARIES_SEC = [20, 60, 120];
 
@@ -49,6 +67,7 @@ const ALERT_STAGE3_SHRINK_WINDOW_SEC = 60;
 export class NotificationAlerts {
 	private _isEnabled: boolean;
 	private _notification: Notification | undefined;
+	private _pomodoroNotification: Notification | undefined;
 	private _audioContext: AudioContext | undefined;
 	private _lastToneAtSec: number | undefined;
 
@@ -123,6 +142,39 @@ export class NotificationAlerts {
 			tag: NOTIFICATION_TAG,
 			requireInteraction: true,
 		});
+	}
+
+	/**
+	 * Announces a finished pomodoro period with its own desktop notification
+	 * and its own tone.
+	 *
+	 * A posture alert already on the screen is closed first, and its tone
+	 * stopped, without the reward chime: the slouch has not been corrected, it
+	 * has only been overtaken by the end of the period, and two sounds at once
+	 * would say nothing clearly.
+	 */
+	announcePomodoro(content: PomodoroAlertContent, toneKind: PomodoroToneKind): void {
+		this._notification?.close();
+		this._notification = undefined;
+		this._lastToneAtSec = undefined;
+
+		if (this._isEnabled === false) return;
+
+		if (this.isSupported && Notification.permission === 'granted') {
+			this._pomodoroNotification?.close();
+			this._pomodoroNotification = new Notification(content.title, {
+				body: content.body,
+				tag: POMODORO_NOTIFICATION_TAG,
+				requireInteraction: true,
+			});
+		}
+		this._playToneSequence(POMODORO_TONES[toneKind]);
+	}
+
+	/** Closes the visible pomodoro notification, when the timer is switched off. */
+	clearPomodoro(): void {
+		this._pomodoroNotification?.close();
+		this._pomodoroNotification = undefined;
 	}
 
 	/**

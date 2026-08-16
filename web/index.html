@@ -77,6 +77,14 @@
             <span class="start-note">Takes three seconds to calibrate.</span>
           </div>
 
+          <div class="pomodoro" id="pomodoro" aria-label="Pomodoro timer" hidden>
+            <div class="pomodoro-head">
+              <span id="pomodoro-label">Work period 1 of 4</span>
+              <span class="pomodoro-countdown" id="pomodoro-countdown">25:00</span>
+            </div>
+            <p class="pomodoro-status" id="pomodoro-status"></p>
+          </div>
+
           <div class="figures" id="figures" hidden>
             <div class="figure">
               <span class="figure-value" id="upright-value">100%</span>
@@ -126,6 +134,14 @@
             <i class="bi bi-bell" id="toggle-alerts-icon" aria-hidden="true"></i>
             <span id="toggle-alerts-label">Desktop alerts: off</span>
           </button>
+          <button id="open-settings" class="ghost-button" type="button">
+            <i class="bi bi-sliders" aria-hidden="true"></i>
+            <span>Settings</span>
+          </button>
+          <button id="toggle-pomodoro" class="ghost-button" type="button">
+            <i class="bi bi-hourglass-split" id="toggle-pomodoro-icon" aria-hidden="true"></i>
+            <span id="toggle-pomodoro-label">Pomodoro: off</span>
+          </button>
           <button id="recalibrate" class="ghost-button" type="button">
             <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
             <span>Recalibrate</span>
@@ -137,6 +153,45 @@
         </div>
       <p id="live-announcement" class="visually-hidden" role="status" aria-live="polite"></p>
     </div>
+
+    <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title">
+      <form method="dialog" class="settings-form">
+        <h2 class="settings-title" id="settings-title">Pomodoro settings</h2>
+
+        <div class="settings-field">
+          <label for="setting-work-period">Work period length</label>
+          <span class="settings-input"><input id="setting-work-period" type="number" min="1" max="180" step="1" /><span class="settings-unit">minutes</span></span>
+        </div>
+        <div class="settings-field">
+          <label for="setting-short-break">Short break length</label>
+          <span class="settings-input"><input id="setting-short-break" type="number" min="1" max="60" step="1" /><span class="settings-unit">minutes</span></span>
+        </div>
+        <div class="settings-field">
+          <label for="setting-long-break">Long break length</label>
+          <span class="settings-input"><input id="setting-long-break" type="number" min="1" max="90" step="1" /><span class="settings-unit">minutes</span></span>
+        </div>
+        <div class="settings-field">
+          <label for="setting-work-periods-before-long-break">Work periods before a long break</label>
+          <span class="settings-input"><input id="setting-work-periods-before-long-break" type="number" min="1" max="12" step="1" /><span class="settings-unit">periods</span></span>
+        </div>
+        <div class="settings-field settings-field-switch">
+          <label for="setting-automatic-start">Start the next period automatically</label>
+          <input id="setting-automatic-start" type="checkbox" />
+        </div>
+        <div class="settings-field settings-field-switch">
+          <label for="setting-pause-during-break">Pause posture monitoring during a break</label>
+          <input id="setting-pause-during-break" type="checkbox" />
+        </div>
+
+        <p class="settings-note">A period already counting down keeps the length it started with. A new length applies from the next period.</p>
+
+        <div class="settings-actions">
+          <button id="settings-restore-defaults" class="ghost-button" type="button">Restore defaults</button>
+          <button id="settings-cancel" class="ghost-button" type="button">Cancel</button>
+          <button id="settings-save" class="primary-button settings-save" type="button">Save</button>
+        </div>
+      </form>
+    </dialog>
     <script type="module" src="./js/main.ts"></script>
   </body>
 </html>

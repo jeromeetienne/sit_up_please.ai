@@ -1,3 +1,5 @@
+import type { PomodoroViewModel } from '../pomodoro/pomodoro_types';
+
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 //	Types — the shared data shapes of the posture monitor
@@ -57,6 +59,8 @@ export type PostureAlertContent = { title: string; body: string };
 
 /** Everything the interface needs in order to draw the page once. */
 export type MonitorViewModel = {
+	/** Everything the interface needs in order to draw the pomodoro area once. */
+	pomodoro: PomodoroViewModel;
 	isIdle: boolean;
 	isCalibrating: boolean;
 	isLive: boolean;

@@ -1,5 +1,10 @@
 import type { CameraState, MonitorPhase, MonitorViewModel, PostureAlertContent, PostureDirection, PostureState, SessionBar, StateColour } from './monitor_types';
+import type { PomodoroAlertContent, PomodoroToneKind } from '../pomodoro/pomodoro_types';
+import type { PomodoroSettingsValues } from '../pomodoro/pomodoro_settings';
 import { MonitorCopy } from './monitor_copy';
+import { PomodoroCopy } from '../pomodoro/pomodoro_copy';
+import { PomodoroSettings } from '../pomodoro/pomodoro_settings';
+import { PomodoroTimer } from '../pomodoro/pomodoro_timer';
 import { PostureReference } from '../posture/posture_reference';
 import { PostureTracker } from '../posture/posture_tracker';
 
@@ -25,6 +30,8 @@ export type MonitorSessionCallbacks = {
 	onAlertRaised: (content: PostureAlertContent) => void;
 	onAlertTick: (badRunSec: number) => void;
 	onAlertCleared: () => void;
+	onPomodoroPeriodFinished: (content: PomodoroAlertContent, toneKind: PomodoroToneKind) => void;
+	onPomodoroNotificationDismissed: () => void;
 };
 
 /**
@@ -35,6 +42,8 @@ export type MonitorSessionCallbacks = {
 export class MonitorSession {
 	private readonly _tracker: PostureTracker;
 	private readonly _callbacks: MonitorSessionCallbacks;
+	private readonly _pomodoroSettings = PomodoroSettings.load();
+	private readonly _pomodoroTimer: PomodoroTimer;
 
 	private _phase: MonitorPhase = 'idle';
 	private _isPaused = false;
@@ -59,6 +68,38 @@ export class MonitorSession {
 	constructor(tracker: PostureTracker, callbacks: MonitorSessionCallbacks) {
 		this._tracker = tracker;
 		this._callbacks = callbacks;
+		this._pomodoroTimer = new PomodoroTimer(this._pomodoroSettings, {
+			onTick: () => this.publish(),
+			onPeriodFinished: (finishedKind, nextKind, nextDurationSec) => {
+				// The posture alert is dropped without the reward chime: the
+				// end of the period, not a corrected posture, is what ends it.
+				this._isAlertActive = false;
+				const content = PomodoroCopy.finishedContent(
+					finishedKind,
+					nextKind,
+					nextDurationSec,
+					this._pomodoroSettings.startsNextPeriodAutomatically,
+				);
+				const toneKind: PomodoroToneKind = finishedKind === 'work' ? 'work-finished' : 'break-finished';
+				this._callbacks.onPomodoroPeriodFinished(content, toneKind);
+			},
+		});
+	}
+
+	/**
+	 * Takes the settings saved in the settings panel. The same settings object
+	 * is shared with the pomodoro timer, so both read the new values at once.
+	 */
+	applyPomodoroSettings(settings: PomodoroSettingsValues): void {
+		this._pomodoroTimer.applySettings(settings);
+		this.publish();
+	}
+
+	/** Starts the pomodoro cycle, starts the next period, or switches the timer off. */
+	togglePomodoro(): void {
+		this._pomodoroTimer.toggle();
+		this._callbacks.onPomodoroNotificationDismissed();
+		this.publish();
 	}
 
 	/** Draws the screen for the first time, before anything has been watched. */
@@ -116,10 +157,11 @@ export class MonitorSession {
 		this.publish();
 	}
 
-	/** Stops both timers and closes the camera stream. */
+	/** Stops every timer, including the pomodoro timer, and closes the camera stream. */
 	stop(): void {
 		window.clearInterval(this._tickTimer);
 		window.clearInterval(this._calibrationTimer);
+		this._pomodoroTimer.stop();
 		this._tracker.stop();
 	}
 
@@ -159,6 +201,10 @@ export class MonitorSession {
 	 */
 	private _tick(): void {
 		if (this._isPaused) return;
+		if (this._pomodoroTimer.holdsPostureMonitoring) {
+			this._clearAlert();
+			return;
+		}
 
 		const reading = this._tracker.read();
 		this._lean = reading.lean;
@@ -238,8 +284,10 @@ export class MonitorSession {
 		const isCalibrating = this._phase === 'calibrating';
 		const isLive = this._phase === 'running';
 		const cameraState = this._tracker.cameraState;
-		const isBad = isLive && this._isPaused === false && this._posture === 'bad';
-		const isBlind = isLive && this._isPaused === false && this._isReadingAvailable === false;
+		const isOnBreak = this._pomodoroTimer.holdsPostureMonitoring;
+		const isReading = this._isPaused === false && isOnBreak === false;
+		const isBad = isLive && isReading && this._posture === 'bad';
+		const isBlind = isLive && isReading && this._isReadingAvailable === false;
 
 		const isPreparing = isCalibrating && this._tracker.isReady === false;
 
@@ -258,6 +306,10 @@ export class MonitorSession {
 			verdict = 'Paused.';
 			guidance = 'The camera is still yours. Nothing is being read.';
 			verdictMeta = 'Resume whenever you like.';
+		} else if (isLive && isOnBreak) {
+			verdict = 'On a break.';
+			guidance = 'Stand up, look away from the screen and move about. Nothing is being read while the break lasts.';
+			verdictMeta = 'Posture monitoring starts again when the break ends.';
 		} else if (isLive && cameraState === 'denied') {
 			verdict = 'No camera.';
 			guidance = 'The browser did not grant camera access, so there is nothing to read. Allow the camera and calibrate again.';
@@ -282,6 +334,7 @@ export class MonitorSession {
 		const uprightShare = this._sessionSec > 0 ? Math.round((this._goodSec / this._sessionSec) * 100) : 100;
 
 		return {
+			pomodoro: this._pomodoroTimer.viewModel(),
 			isIdle,
 			isCalibrating,
 			isLive,
@@ -294,12 +347,12 @@ export class MonitorSession {
 			spinePath: postureFigure.spinePath,
 			headX: postureFigure.headX,
 			headY: postureFigure.headY,
-			kickerLabel: MonitorSession._kickerLabel(isIdle, this._isPaused),
+			kickerLabel: MonitorSession._kickerLabel(isIdle, this._isPaused, isOnBreak),
 			feedLabel: MonitorSession._feedLabel(isIdle, cameraState),
 			cameraNote: cameraState === 'denied'
 				? 'Camera blocked — showing the tracking layer only'
 				: 'Front camera · mirrored',
-			rateNote: MonitorSession._rateNote(isLive && this._isPaused === false, isBlind, cameraState),
+			rateNote: MonitorSession._rateNote(isLive && isReading, isBlind, cameraState),
 			uprightText: `${uprightShare}%`,
 			slipsText: String(this._slipCount),
 			bestRunText: MonitorCopy.formatDuration(this._bestRunSec),
@@ -310,9 +363,10 @@ export class MonitorSession {
 	}
 
 	/** Returns the small label above the verdict. */
-	private static _kickerLabel(isIdle: boolean, isPaused: boolean): string {
+	private static _kickerLabel(isIdle: boolean, isPaused: boolean, isOnBreak: boolean): string {
 		if (isIdle) return 'Standing by';
 		if (isPaused) return 'Paused';
+		if (isOnBreak) return 'On a break';
 		return 'Live monitor';
 	}
 

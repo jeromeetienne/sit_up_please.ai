@@ -407,6 +407,52 @@ button {
 	color: var(--color-neutral-700);
 }
 
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Pomodoro area                                                             */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+/*
+ * The pomodoro area sits above the session figures and carries no state
+ * colour of its own: the one colour of the page belongs to the posture state,
+ * which is what the application is for.
+ */
+.pomodoro {
+	margin-top: 4px;
+	padding-top: 18px;
+	border-top: 1px solid var(--color-divider);
+}
+
+.pomodoro[hidden] {
+	display: none;
+}
+
+.pomodoro-head {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 16px;
+	font-size: 11px;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--color-neutral-700);
+}
+
+.pomodoro-countdown {
+	font-family: var(--font-heading);
+	font-size: 30px;
+	line-height: 1;
+	letter-spacing: 0;
+	text-transform: none;
+	font-variant-numeric: tabular-nums;
+	color: var(--color-text);
+}
+
+.pomodoro-status {
+	margin: 6px 0 0;
+	font-size: 13px;
+	color: var(--color-neutral-700);
+}
+
 .figures {
 	display: grid;
 	grid-template-columns: repeat(3, 1fr);
@@ -608,6 +654,101 @@ button {
 .ghost-button:disabled:hover {
 	border-color: var(--color-divider);
 	color: var(--color-neutral-700);
+}
+
+/*///////////////////////////////////////////////////////////////////////////*/
+/*	Settings panel                                                            */
+/*///////////////////////////////////////////////////////////////////////////*/
+
+.settings-dialog {
+	width: min(460px, calc(100vw - 2 * var(--pad)));
+	padding: var(--space-6);
+	border: 1px solid var(--color-divider);
+	border-radius: var(--radius-lg);
+	background: var(--color-bg);
+	color: var(--color-text);
+	font-family: var(--font-body);
+	font-size: 15px;
+	box-shadow: var(--shadow-lg);
+}
+
+.settings-dialog::backdrop {
+	background: color-mix(in srgb, #201e1d 42%, transparent);
+}
+
+.settings-title {
+	margin: 0 0 var(--space-4);
+	font-family: var(--font-heading);
+	font-weight: var(--font-heading-weight);
+	font-size: 24px;
+	line-height: 1.2;
+}
+
+.settings-field {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	padding: 11px 0;
+	border-top: 1px solid var(--color-divider);
+}
+
+.settings-field label {
+	line-height: 1.35;
+}
+
+.settings-input {
+	display: inline-flex;
+	flex: none;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.settings-input input {
+	width: 74px;
+	padding: 6px 8px;
+	border: 1px solid var(--color-divider);
+	border-radius: var(--radius-md);
+	background: var(--color-neutral-100);
+	font: inherit;
+	font-variant-numeric: tabular-nums;
+	color: var(--color-text);
+	text-align: right;
+}
+
+.settings-unit {
+	width: 60px;
+	font-size: 12px;
+	letter-spacing: 0.1em;
+	text-transform: uppercase;
+	color: var(--color-neutral-700);
+}
+
+.settings-field-switch input {
+	flex: none;
+	width: 18px;
+	height: 18px;
+	accent-color: var(--color-accent);
+}
+
+.settings-note {
+	margin: var(--space-3) 0 0;
+	padding-top: var(--space-3);
+	border-top: 1px solid var(--color-divider);
+	font-size: 13px;
+	color: var(--color-neutral-700);
+}
+
+.settings-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: var(--space-4);
+}
+
+.settings-save {
+	padding: 9px 22px;
+	font-size: 16px;
 }
 
 /*///////////////////////////////////////////////////////////////////////////*/
