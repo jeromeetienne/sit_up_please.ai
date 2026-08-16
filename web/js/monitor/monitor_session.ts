@@ -85,7 +85,7 @@ export class MonitorSession {
 	}
 
 	/**
-	 * Takes the settings saved in the settings panel. The same settings object
+	 * Takes the settings saved in the Pomodoro settings panel. The same settings object
 	 * is shared with the pomodoro timer, so both read the new values at once.
 	 */
 	applyPomodoroSettings(settings: PomodoroSettingsValues): void {

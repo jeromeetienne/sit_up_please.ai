@@ -2,7 +2,7 @@ import Modal from 'bootstrap/js/dist/modal';
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-//	SettingsDialog — the panel that holds the camera settings
+//	SettingsDialog — the Situp settings panel, which holds the camera settings
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -18,9 +18,9 @@ export type SettingsDialogCallbacks = {
 };
 
 /**
- * The panel that holds the camera settings. Every setting of the panel acts as
- * soon as it is pressed rather than on a save, so the panel has no save button
- * and closing it changes nothing further.
+ * The Situp settings panel, which holds the camera settings. Every setting of
+ * the panel acts as soon as it is pressed rather than on a save, so the panel has
+ * no save button and closing it changes nothing further.
  *
  * The pomodoro parameters live in the Pomodoro settings panel and the notification
  * setup in the Notification settings panel, each opened from its own button in the
@@ -50,7 +50,7 @@ export class SettingsDialog {
 	/** Returns an element by its identifier, or fails loudly when it is absent. */
 	private static _require<T extends Element>(elementId: string): T {
 		const element = document.getElementById(elementId);
-		if (element === null) throw new Error(`The settings panel could not find the element "${elementId}".`);
+		if (element === null) throw new Error(`The Situp settings panel could not find the element "${elementId}".`);
 		return element as unknown as T;
 	}
 }

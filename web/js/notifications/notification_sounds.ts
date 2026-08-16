@@ -8,7 +8,7 @@ import type { NotificationSoundName, ToneSequence } from './notification_types';
 
 /** One entry of the catalogue: the words shown in the panel and the notes played. */
 type CatalogueEntry = {
-	/** The name of the sound as the settings panel writes it. */
+	/** The name of the sound as the Notification settings panel writes it. */
 	label: string;
 	/** The notes the sound plays, at full volume. */
 	tone: ToneSequence;
@@ -80,8 +80,9 @@ const SOUND_CATALOGUE: Record<NotificationSoundName, CatalogueEntry> = {
 
 /**
  * The one place that knows which sounds exist, what each one is called on the
- * screen, and which notes it plays. The settings panel builds its sound lists
- * from this catalogue, so a sound added here appears in the panel on its own.
+ * screen, and which notes it plays. The Notification settings panel builds its
+ * sound lists from this catalogue, so a sound added here appears in the panel on
+ * its own.
  */
 export class NotificationSounds {
 	/** Returns every sound name of the catalogue, in the order the panel lists them. */
@@ -90,10 +91,10 @@ export class NotificationSounds {
 	}
 
 	/**
-	 * Returns the name of one sound as the settings panel writes it.
+	 * Returns the name of one sound as the Notification settings panel writes it.
 	 *
 	 * @param soundName - The sound of the catalogue to name.
-	 * @returns The words the settings panel shows for that sound.
+	 * @returns The words the Notification settings panel shows for that sound.
 	 */
 	static labelFor(soundName: NotificationSoundName): string {
 		return SOUND_CATALOGUE[soundName].label;

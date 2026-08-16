@@ -114,7 +114,7 @@ export class MonitorView {
 		this._installButton.hidden = isAvailable === false;
 	}
 
-	/** Puts the landmark-overlay switch of the settings panel in its current position. */
+	/** Puts the landmark-overlay switch of the Situp settings panel in its current position. */
 	setLandmarksState(isEnabled: boolean): void {
 		this._landmarksSwitch.checked = isEnabled;
 	}

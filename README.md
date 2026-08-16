@@ -15,7 +15,7 @@ The initial implementation provides:
 - an immediate in-page reminder when posture moves away from the calibrated reference;
 - recalibration and pause-monitoring controls in the posture column;
 - a pomodoro timer on the same page, with its own notification and its own tone;
-- a Pomodoro settings panel for the pomodoro parameters, and a settings panel for the camera; and
+- a Pomodoro settings panel for the pomodoro parameters, and a Situp settings panel for the camera; and
 - a Notification settings panel that sets up every event on its own: whether it shows a desktop notification, whether it plays a sound, which sound, and how loud.
 
 Browser notifications are optional. If the browser does not support them or the person does not grant permission, the in-page reminder still works.
@@ -46,13 +46,13 @@ The build performs strict TypeScript checking and creates a production bundle in
 
 ## Interface
 
-The interface is plain [Bootstrap](https://getbootstrap.com/) 5. The navigation bar, the cards, the buttons, the alert that carries the posture verdict, the stacked progress bar that carries the session history, the settings modal, the Pomodoro settings modal and the Notification settings modal are all Bootstrap components with their own appearance, and the layout is the Bootstrap grid.
+The interface is plain [Bootstrap](https://getbootstrap.com/) 5. The navigation bar, the cards, the buttons, the alert that carries the posture verdict, the stacked progress bar that carries the session history, the Situp settings modal, the Pomodoro settings modal and the Notification settings modal are all Bootstrap components with their own appearance, and the layout is the Bootstrap grid.
 
 The whole stylesheet is `web/css/style.scss`: it imports Bootstrap and adds three rules, which are the ones Bootstrap has no class for. There are no design tokens, no palette and no typeface of this project's own, so the page can be changed by swapping Bootstrap classes in `web/index.html` rather than by writing style rules.
 
 Colour that carries meaning uses the Bootstrap contextual colours: `success` while the calibrated posture is held, `danger` while it is lost, `secondary` while it is unknown.
 
-The controls that act on a session sit in the posture column, under the verdict, as two Bootstrap button groups: **Recalibrate** and the start-and-pause button for posture monitoring, then the **Pomodoro** button for the timer. The navigation bar keeps only what acts on the application as a whole: the install button, the repository link, the theme button and the three buttons that open the settings panel, the Pomodoro settings panel and the Notification settings panel.
+The controls that act on a session sit in the posture column, under the verdict, as two Bootstrap button groups: **Recalibrate** and the start-and-pause button for posture monitoring, then the **Pomodoro** button for the timer. The navigation bar keeps only what acts on the application as a whole: the install button, the repository link, the theme button and the three buttons that open the Situp settings panel, the Pomodoro settings panel and the Notification settings panel.
 
 ## Pomodoro timer
 
@@ -93,7 +93,7 @@ A period already counting down keeps the length it started with, so a change nev
 
 Select **Restore defaults** in the Pomodoro settings panel to put every setting of the panel back to its default: the timer is switched off, and the parameters return to the defaults in the table above in the fields of the panel. As with any other edit, the parameters are only stored once **Save** is selected, so **Cancel** still leaves the stored parameters as they were.
 
-Each of the three panels restores its own defaults. **Restore defaults** in the settings panel draws the facial landmarks over the picture again, and **Restore defaults** in the Notification settings panel is described under [Notifications](#notifications) below.
+Each of the three panels restores its own defaults. **Restore defaults** in the Situp settings panel draws the facial landmarks over the picture again, and **Restore defaults** in the Notification settings panel is described under [Notifications](#notifications) below.
 
 While **Pause posture monitoring during a break** is on, the page reads **On a break.** for the length of every break, no posture reading is taken, and no slip is counted. A break means leaving the chair, so a slouch reminder and a lost face would both fire for no reason.
 
@@ -126,9 +126,9 @@ The **Allow notifications and sounds** switch at the top of the panel stands abo
 
 Select **Restore defaults** in the Notification settings panel to put every event back to the table above, and the **Allow notifications and sounds** switch back to where a fresh page load would put it — on when this browser has already granted notification permission, off otherwise, and never asking for permission. The events are only stored once **Save** is selected, so **Cancel** still leaves the stored setup as it was.
 
-## Settings
+## Situp settings
 
-Select **Settings** in the navigation bar to open the settings panel. It carries the camera settings, which is at present the single switch **Draw the facial landmarks over the picture**. The switch takes effect as soon as it is pressed, so the panel has no save button and closing it changes nothing further. Select **Restore defaults** to draw the facial landmarks over the picture again.
+Select **Situp settings** in the navigation bar to open the Situp settings panel. It carries the camera settings, which is at present the single switch **Draw the facial landmarks over the picture**. The switch takes effect as soon as it is pressed, so the panel has no save button and closing it changes nothing further. Select **Restore defaults** to draw the facial landmarks over the picture again.
 
 The pomodoro parameters and the notification setup each have a panel of their own, described under [Pomodoro timer](#pomodoro-timer) and [Notifications](#notifications) above.
 

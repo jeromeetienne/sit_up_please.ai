@@ -41,7 +41,7 @@ export class PomodoroTimer {
 	}
 
 	/**
-	 * Takes new settings from the settings panel.
+	 * Takes new settings from the Pomodoro settings panel.
 	 *
 	 * A period already counting down keeps the length it started with, so a
 	 * change never moves the finishing line of the period the person is in the
