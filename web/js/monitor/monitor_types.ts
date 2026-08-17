@@ -44,6 +44,13 @@ export type PostureTolerances = {
 /** Whether the camera stream is closed, running, or refused by the browser. */
 export type CameraState = 'off' | 'on' | 'denied';
 
+/**
+ * Whether the on-device Face Landmarker model is loaded and ready to read frames, still loading, or
+ * could not be loaded at all. A model that could not be loaded is reported rather than passed over in
+ * silence: without it the camera picture still appears, but no posture reading is ever produced.
+ */
+export type ModelState = 'off' | 'loading' | 'ready' | 'failed';
+
 /** Which way the person has moved away from the calibrated reference posture. */
 export type PostureDirection = 'forward' | 'backward' | 'left' | 'right';
 

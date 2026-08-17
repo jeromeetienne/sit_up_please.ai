@@ -1,4 +1,4 @@
-import type { CameraState, MonitorPhase, MonitorViewModel, PostureAlertContent, PostureDirection, PostureState, SessionBar, StateColour } from './monitor_types';
+import type { CameraState, ModelState, MonitorPhase, MonitorViewModel, PostureAlertContent, PostureDirection, PostureState, SessionBar, StateColour } from './monitor_types';
 import type { PomodoroAlertContent, PomodoroToneKind } from '../pomodoro/pomodoro_types';
 import type { PomodoroSettingsValues } from '../pomodoro/pomodoro_settings';
 import type { SitupSettingsValues } from '../settings/situp_settings';
@@ -317,6 +317,7 @@ export class MonitorSession {
 		const isCalibrating = this._phase === 'calibrating';
 		const isLive = this._phase === 'running';
 		const cameraState = this._tracker.cameraState;
+		const modelState = this._tracker.modelState;
 		const isOnBreak = this._pomodoroTimer.holdsPostureMonitoring;
 		const isReading = this._isPaused === false && isOnBreak === false;
 		const isBad = isLive && isReading && this._posture === 'bad';
@@ -346,6 +347,10 @@ export class MonitorSession {
 		} else if (isLive && cameraState === 'denied') {
 			verdict = 'No camera.';
 			guidance = 'The browser did not grant camera access, so there is nothing to read. Allow the camera and calibrate again.';
+			verdictMeta = 'Reading is on hold.';
+		} else if (isLive && modelState === 'failed') {
+			verdict = 'No posture model.';
+			guidance = 'The on-device posture model could not be loaded, so the camera picture cannot be read. Reload the page to try again.';
 			verdictMeta = 'Reading is on hold.';
 		} else if (isBlind) {
 			verdict = 'Looking for you.';
@@ -381,11 +386,15 @@ export class MonitorSession {
 			headX: postureFigure.headX,
 			headY: postureFigure.headY,
 			kickerLabel: MonitorSession._kickerLabel(isIdle, this._isPaused, isOnBreak),
-			feedLabel: MonitorSession._feedLabel(isIdle, cameraState),
-			cameraNote: cameraState === 'denied'
-				? 'Camera blocked — showing the tracking layer only'
-				: 'Front camera · mirrored',
-			rateNote: MonitorSession._rateNote(isLive && isReading, isBlind, cameraState, this._situpSettings.readsPerSecond),
+			feedLabel: MonitorSession._feedLabel(isIdle, cameraState, modelState),
+			cameraNote: MonitorSession._cameraNote(cameraState, modelState),
+			rateNote: MonitorSession._rateNote(
+				isLive && isReading,
+				isBlind,
+				cameraState,
+				modelState,
+				this._situpSettings.readsPerSecond,
+			),
 			uprightText: `${uprightShare}%`,
 			slipsText: String(this._slipCount),
 			bestRunText: MonitorCopy.formatDuration(this._bestRunSec),
@@ -404,10 +413,18 @@ export class MonitorSession {
 	}
 
 	/** Returns the label of the badge in the corner of the camera picture. */
-	private static _feedLabel(isIdle: boolean, cameraState: CameraState): string {
+	private static _feedLabel(isIdle: boolean, cameraState: CameraState, modelState: ModelState): string {
 		if (isIdle) return 'Off';
 		if (cameraState === 'denied') return 'No camera';
+		if (modelState === 'failed') return 'No model';
 		return 'Live';
+	}
+
+	/** Returns the note printed beside the camera picture. */
+	private static _cameraNote(cameraState: CameraState, modelState: ModelState): string {
+		if (cameraState === 'denied') return 'Camera blocked — showing the tracking layer only';
+		if (modelState === 'failed') return 'Posture model unavailable — camera picture only';
+		return 'Front camera · mirrored';
 	}
 
 	/** Returns the reading-rate note printed under the camera picture. */
@@ -415,10 +432,12 @@ export class MonitorSession {
 		isReading: boolean,
 		isBlind: boolean,
 		cameraState: CameraState,
+		modelState: ModelState,
 		readsPerSecond: number,
 	): string {
 		if (isReading === false) return 'Idle';
 		if (cameraState === 'denied') return 'Camera blocked';
+		if (modelState === 'failed') return 'No posture model';
 		if (isBlind) return 'No face in frame';
 		return `${readsPerSecond} ${readsPerSecond === 1 ? 'read' : 'reads'} / second`;
 	}

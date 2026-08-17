@@ -11,5 +11,5 @@
     "noEmit": true,
     "strict": true
   },
-  "include": ["web", "contribs/chrome_ext"]
+  "include": ["web", "build", "vite.config.ts", "vitest.config.ts"]
 }

@@ -1,8 +1,13 @@
 import { defineConfig } from 'vite';
+import { MediaPipeWebAssemblyPlugin } from './build/media_pipe_web_assembly_plugin';
+import { ServiceWorkerPlugin } from './build/service_worker_plugin';
 
 export default defineConfig(({ command }) => ({
   root: 'web',
   base: command === 'serve' ? '/' : '/sit_up_please.ai/',
+  // The WebAssembly plugin runs first, so that the files it emits are already part of the bundle
+  // when the service worker plugin reads it.
+  plugins: [MediaPipeWebAssemblyPlugin.create(), ServiceWorkerPlugin.create()],
   build: {
     outDir: '../dist',
     emptyOutDir: true,
