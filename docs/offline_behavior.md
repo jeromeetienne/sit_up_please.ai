@@ -1,57 +1,61 @@
 # Offline behavior and the Face Landmarker model download
 
-This document describes how the progressive web application's offline support connects to the on-device face model download, confirms the offline story against the current code, and records a gap the previous documentation did not cover.
+This document describes how the progressive web application starts with no network connection, and how the Face Landmarker model download fits into that.
 
-Source: [issue #11](https://github.com/jeromeetienne/sit_up_please.ai/issues/11).
+Sources: [issue #11](https://github.com/jeromeetienne/sit_up_please.ai/issues/11) recorded the earlier behaviour, and [issue #21](https://github.com/jeromeetienne/sit_up_please.ai/issues/21) holds the measurements and the plan that produced the behaviour described here.
 
-## How the model is loaded
+## What a start needs, and where each part comes from
 
-The application does not bundle the MediaPipe face model or its WebAssembly runtime. Both are fetched at runtime from third-party content delivery networks in [web/js/posture/posture_tracker.ts](../web/js/posture/posture_tracker.ts):
+Every file the application needs is served by the application's own address. Nothing is fetched from a third-party host at any point.
 
-- WebAssembly runtime: `https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm`
-- Face Landmarker model file: `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task`
+- The interface: the document, one JavaScript bundle, one stylesheet bundle, the icon fonts, the icons and the manifest, all written by the build.
+- The Face Landmarker model file, `face_landmarker.task`, 3,758,596 bytes. It is kept in [web/public/models](../web/public/models), because it is a standalone model asset that no npm package distributes. Its SHA-256 sum is `64184e229b263107bc2b804c6625db1341ff2bb731874b0bcc2fe6544e0bc9ff`, and it came from `https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task`.
+- The MediaPipe WebAssembly runtime, which reads the model. [build/media_pipe_web_assembly_plugin.ts](../build/media_pipe_web_assembly_plugin.ts) copies it out of the installed `@mediapipe/tasks-vision` package into the `wasm` folder of the built site, and serves the same files from the development server. Copying rather than fetching keeps the runtime at the version `package-lock.json` pins, next to the JavaScript wrapper from the same package.
 
-Both are fetched inside `PostureTracker.start()` when the camera starts, via `FilesetResolver.forVisionTasks(...)` and `FaceLandmarker.createFromOptions(...)`. The npm package `@mediapipe/tasks-vision` only ships the JavaScript wrapper; the WebAssembly binary and the model weights are never part of the npm package or the build output.
+`FilesetResolver.forVisionTasks` instantiates a small WebAssembly module at run time to find out whether the browser supports the single-instruction-multiple-data operations, then asks for one of two runtime variants. Both variants are shipped, because either one can be the one a browser asks for.
 
-One exception: in the Chrome extension build, the WebAssembly runtime is served from a locally bundled extension path instead of the content delivery network (`chrome.runtime.getURL('wasm')`). The model file itself is always fetched remotely, in both the website and the extension.
+## How the service worker stores all of it
 
-This self-hosting is already fully wired up for the extension: the npm package `@mediapipe/tasks-vision` ships the same WebAssembly runtime files locally at `node_modules/@mediapipe/tasks-vision/wasm/`, and [contribs/chrome_ext/vite.config.ts](../contribs/chrome_ext/vite.config.ts) has a `copyMediaPipeWasm()` build plugin that copies that directory into the extension's own build output. The main web application's `vite.config.ts` has no equivalent step, which is why the website falls back to the jsdelivr content delivery network for the WebAssembly runtime while the extension never needs the network for it at all.
+[web/sw.js](../web/sw.js) is a template. [build/service_worker_plugin.ts](../build/service_worker_plugin.ts) fills in its four placeholder values and emits the result as `sw.js` at the root of the built site. The list of files cannot be written by hand, for two reasons: the JavaScript bundle and the stylesheet bundle carry a content hash in their names that is only known once the build has run, and a first visit registers the service worker after the browser has already asked for those two files, so a service worker that only watches later requests never sees them.
 
-## How the service worker connects to that download
+The install step stores the whole list at once, and runs the same single-instruction test the resolver runs so that only the runtime variant this browser will ask for is stored. `cache.addAll` either stores everything or stores nothing, which is what is wanted: a half-filled store would leave the application unable to start offline while looking as though it could. A failed install leaves the previous version and its stored files in place, and the browser tries again on the next visit.
 
-[web/public/sw.js](../web/public/sw.js) caches two separate things:
+Two settings on every lookup are both load-bearing, and a start fails without either one:
 
-1. **The application shell** — the built HTML, manifest, icons, and favicon, installed into the cache as soon as the service worker installs, then served network-first with a cache fallback for navigations.
-2. **Cross-origin responses from an explicit host allow-list** — `cdn.jsdelivr.net` and `storage.googleapis.com`, which are exactly the two hosts the model-loading code above fetches from. Any GET request to those hosts is served stale-while-revalidate: return the cached copy immediately if one exists, and always refresh the cache from the network in the background.
+- `ignoreSearch`, because the stylesheet asks for the icon font with a cache-busting query string that is not part of the file name the build emitted.
+- `ignoreVary`, because a `Vary` header on the stored response otherwise takes part in the lookup. A static file from this site never differs by request header, but the servers answer with one anyway: the Vite preview server sends `Vary: Origin` and GitHub Pages sends `Vary: Accept-Encoding`. Without this setting every lookup misses, the fallback reaches for a network that is not there, and the person is left with an unstyled page and dead buttons.
 
-The connection between the progressive web application and the model download is this allow-list: the service worker does not special-case the model file, it opportunistically caches any successful response from those two hosts, which happens to include the WebAssembly runtime files and the `face_landmarker.task` model file once `PostureTracker.start()` fetches them. The same stale-while-revalidate branch also handles the application's own built JavaScript and CSS bundle, since those are same-origin GET requests that are not navigations either — the install-time precache only covers the navigation document, the manifest, and the icons, not the JavaScript and CSS bundle. So a fully offline start needs one complete online visit to have populated the runtime cache with the application's own script and style files too, not only the model and WebAssembly runtime.
+A navigation is answered from the stored document rather than from the network. The stored document is the copy that names the very files stored beside it. Going to the network first would store a newer document naming content-hashed files that are held nowhere, which is what used to leave an offline start broken after a deployment.
 
-Both content delivery network hosts return `access-control-allow-origin: *`, so these are ordinary readable ("cors", not "opaque") responses that the service worker can fully cache and replay — there is no cross-origin resource sharing limitation on caching the model or the WebAssembly runtime. Separately, the two hosts set their own short `Cache-Control` freshness windows for the browser's ordinary HTTP cache (`storage.googleapis.com`: one hour; `cdn.jsdelivr.net`: seven days), but the service worker's own `cache.put()` keeps an independent copy in the Cache Storage API with no expiry of its own, so offline availability does not depend on those upstream freshness windows.
+## Keeping one deployment together
 
-The service worker registers only in the production build, not in `npm run dev` ([web/js/pwa/offline_support.ts](../web/js/pwa/offline_support.ts)), and registration failures are swallowed silently, leaving the application working online without offline capability.
+The cache names carry a build identifier, which is a hash over the contents of every stored file and over the installed MediaPipe package version. Taking the hash over file contents rather than file names is deliberate: a deployment that only edits the document leaves every content-hashed file name unchanged, so an identifier taken from names alone would not change, the browser would see no new service worker, and every device would keep serving the previous document for good.
+
+A new deployment therefore produces a service worker the browser sees as new. It installs and stores the new build completely, and only then activates and deletes the caches of the previous build. A device that could already start offline keeps that ability throughout.
 
 ## When the application can and cannot start offline
 
-**Can start offline:**
-
-After one visit that is online for its entire duration and successfully starts the camera (so `PostureTracker.start()` runs to completion), all of the shell, the WebAssembly runtime, and the model file are cached. Every later visit, online or fully offline, loads the interface from cache and re-creates the Face Landmarker detector from the cached WebAssembly and model responses. Face landmark detection itself then runs entirely on-device, so posture tracking keeps working with no network connection at all.
+**Can start offline:** after one visit online that stayed open long enough for the roughly 16 megabyte download to finish. The camera never has to have been started. Every later visit, online or fully offline, opens the interface, starts the camera, calibrates and produces posture readings.
 
 **Cannot start offline:**
 
-- A device that has never opened the application online cannot start it offline at all — this is already called out in the project's `README.md`.
-- Clearing site data or uninstalling removes both caches, requiring the whole fetch-and-cache cycle again.
+- A device that has never opened the application online.
+- A device whose first visit was closed before the download finished. The install stores everything or nothing, so nothing is stored and the next visit tries again.
+- A device whose site data has been cleared, or where the application has been uninstalled.
 
-**Gap not previously documented:** a first visit where the camera or model fetch does not finish successfully — permission denied, permission prompt dismissed, or the model fetch itself failing — leaves the shell cached but the runtime cache empty for the WebAssembly runtime and model entries. `PostureTracker.start()` swallows a failed Face Landmarker creation silently: the camera preview still shows, but no posture readings are produced, with nothing telling the person why. On a later fully offline visit from that same device, the interface loads from cache but posture detection still cannot initialize, because the model was never actually cached. The previous README wording ("the model file ... still needs a network connection the first time it is fetched") reads as though any online visit satisfies that requirement, but it only does so if the fetch actually completes.
+## What was measured
 
-## Secondary risk: unpinned model and runtime versions
+Measured against the production build, served with `vite preview --base /sit_up_please.ai/` and then with that server stopped, so the application's own address refused every connection:
 
-The WebAssembly runtime URL pins to the npm dist-tag `@latest` rather than to the same version installed locally, and the model URL pins to a `latest` path segment rather than a fixed model version. Because the runtime cache is refreshed stale-while-revalidate on every online visit, a device that has been working offline for a while could silently pick up a newer WebAssembly build or model version the next time it happens to be online, with no version pinning to guarantee it still matches the bundled JavaScript wrapper. This is not a known break today, just an exposure that the offline caching inherits from the upstream URLs.
+- One visit online, with the camera never touched, stored 14 files totalling 16,121,296 bytes, including `models/face_landmarker.task` at 3,758,596 bytes and the single-instruction runtime pair. The no-single-instruction variant was correctly left alone.
+- With the server stopped, the interface opened fully styled, with 3,359 stylesheet rules parsed, and the icon font was served in spite of its query string.
+- With the server stopped, `wasm/vision_wasm_internal.wasm` was served as `application/wasm` and compiled, reporting 146 exports.
+- `FaceLandmarker.createFromOptions` built a working detector from these same-origin paths in 650 milliseconds.
 
-## Suggested follow-ups
+## Notes
 
-- Document the "first visit didn't finish loading the model" case as a distinct offline failure mode, separate from "never opened online at all".
-- Consider surfacing a visible state, not just a silent no-op, when the Face Landmarker fails to initialize, both online and offline, so a person understands why posture tracking is not running.
-- Consider adding the same `copyMediaPipeWasm()`-style build step already used by [contribs/chrome_ext/vite.config.ts](../contribs/chrome_ext/vite.config.ts) to the main web application's `vite.config.ts`, so the website self-hosts the WebAssembly runtime the same way the Chrome extension already does. That would remove the jsdelivr content delivery network dependency, and the unpinned `@latest` version risk that comes with it, entirely, leaving only the `face_landmarker.task` model file itself as a required external fetch, since that file is a standalone model asset that is not distributed through the npm package.
-- If the model URL's `latest` path segment cannot be pinned to a fixed model version, consider vendoring a known-good copy of `face_landmarker.task` the same way, or at minimum recording the version currently in use so a future upstream change can be diagnosed against a known baseline.
+The service worker registers only in the production build, not in `npm run dev` ([web/js/pwa/offline_support.ts](../web/js/pwa/offline_support.ts)), and a failed registration is passed over in silence, leaving the application working online without the ability to start offline.
+
+`PostureTracker` reports a model that will not load as a state the interface reads, rather than passing it over in silence. The screen then says the posture model could not be loaded, instead of showing a camera picture that never produces a reading.
 
 Related: [issue #2](https://github.com/jeromeetienne/sit_up_please.ai/issues/2).

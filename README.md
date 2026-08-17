@@ -20,7 +20,7 @@ The initial implementation provides:
 
 Browser notifications are optional. If the browser does not support them or the person does not grant permission, the in-page reminder still works.
 
-The application is also a progressive web application: it can be installed and launched like a native application, and it caches its own interface so it can start without a network connection after a first visit. See [Progressive web application support](#progressive-web-application-support) below.
+The application is also a progressive web application: it can be installed and launched like a native application, and after one visit online it works with no network connection at all, posture readings included. See [Progressive web application support](#progressive-web-application-support) below.
 
 ## Requirements
 
@@ -142,7 +142,7 @@ Both themes are Bootstrap's own. The theme in force is written to the root eleme
 
 ## Progressive web application support
 
-The application ships a web app manifest and a service worker, so it can be installed like a native application and can start without a network connection after a first visit.
+The application ships a web app manifest and a service worker, so it can be installed like a native application and can run with no network connection at all after one visit online.
 
 **Installing the application**
 
@@ -155,13 +155,20 @@ Once installed, the application opens in its own window without browser address 
 
 **Offline startup**
 
-After a first successful visit online, a service worker keeps a cached copy of the application's interface, so opening the installed application again without a network connection still shows the interface. The webcam and the on-device Face Landmarker model are unaffected by installation: the webcam still asks for the browser's own camera permission, and the Face Landmarker model file, which is fetched from Google's and jsDelivr's content delivery networks rather than bundled with the application, still needs a network connection the first time it is fetched. Once that first fetch has succeeded, the service worker keeps a cached copy of it too, so later offline visits can still load it.
+One visit online is enough. On that visit the service worker stores everything a start needs: the interface, the Face Landmarker model file and the MediaPipe WebAssembly runtime that reads it. Every later visit works with no network connection at all — the interface opens, the camera starts, calibration runs, and posture readings come through, because face landmark detection has always run on the device rather than on a server.
+
+The camera never has to have been started on that first visit. The model file and the WebAssembly runtime are stored while the page loads, not when the camera opens, so a person who visits once and grants the camera permission a week later, with no network connection, still gets a working monitor.
+
+Nothing is fetched from a third-party host at any point. The application serves the Face Landmarker model and the WebAssembly runtime from its own address: the model file is kept in `web/public/models`, and the build copies the runtime out of the installed `@mediapipe/tasks-vision` package, which holds it at the version `package-lock.json` pins.
+
+That first visit downloads about 16 megabytes, most of it the WebAssembly runtime and the model file. It happens once per device, and it has to finish before the network is taken away.
 
 **Limitations**
 
 - The install button only appears in browsers that fire the underlying `beforeinstallprompt` event. Where it does not appear, use that browser's own manual installation step listed above.
-- Offline startup depends on a first visit having completed online. A device that has never opened the application with a network connection cannot start it offline.
-- Uninstalling the application, or clearing the browser's site data for it, removes the cached interface and the cached Face Landmarker model, so the next startup needs a network connection again.
+- Offline startup depends on one visit having completed online, with the roughly 16 megabyte download finished. A device that has never opened the application with a network connection cannot start it offline.
+- Uninstalling the application, or clearing the browser's site data for it, removes everything that was stored, so the next startup needs a network connection again.
+- A new deployment is picked up on the next visit that has a network connection. Until then the stored version keeps running, which is what lets an offline start stay reliable.
 
 ## Privacy and limitations
 

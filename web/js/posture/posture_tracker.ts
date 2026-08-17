@@ -1,5 +1,5 @@
 import { FaceLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
-import type { CameraState, FacialLandmark, LandmarkConnection, PostureBaseline, PostureDirection, PostureMeasurement, PostureReading, PostureTolerances } from '../monitor/monitor_types';
+import type { CameraState, FacialLandmark, LandmarkConnection, ModelState, PostureBaseline, PostureDirection, PostureMeasurement, PostureReading, PostureTolerances } from '../monitor/monitor_types';
 import { PostureReference } from './posture_reference';
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -8,8 +8,12 @@ import { PostureReference } from './posture_reference';
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
-const MEDIA_PIPE_WASM_CDN_URL = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm';
-const FACE_MODEL_URL = 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task';
+// The MediaPipe WebAssembly runtime and the Face Landmarker model are both served by this site from
+// its own origin, so that a start needs no third-party host and works with no network connection at
+// all. The build copies the runtime out of the installed `@mediapipe/tasks-vision` package, which
+// keeps it at the version `package-lock.json` pins; the model file is kept in `web/public/models`.
+const VISION_WEB_ASSEMBLY_PATH = `${import.meta.env.BASE_URL}wasm`;
+const FACE_MODEL_URL = `${import.meta.env.BASE_URL}models/face_landmarker.task`;
 const ANALYSIS_INTERVAL_MS = 1_000 / 15;
 const LEAN_SMOOTHING = 0.35;
 const FACE_LOST_TIMEOUT_MS = 1_200;
@@ -32,6 +36,7 @@ export class PostureTracker {
 	private _faceLandmarker: FaceLandmarker | undefined;
 	private _stream: MediaStream | undefined;
 	private _cameraState: CameraState = 'off';
+	private _modelState: ModelState = 'off';
 	private _reference: PostureBaseline | undefined = PostureReference.load();
 	private _lean = 0;
 	private _direction: PostureDirection = 'forward';
@@ -80,24 +85,31 @@ export class PostureTracker {
 		return this._cameraState;
 	}
 
+	/** Whether the on-device Face Landmarker model is loaded, loading, or could not be loaded. */
+	get modelState(): ModelState {
+		return this._modelState;
+	}
+
 	/** Whether a reference posture is available to score readings against. */
 	get hasReference(): boolean {
 		return this._reference !== undefined;
 	}
 
 	/**
-	 * Whether the camera and the face model have finished starting up — or the
-	 * camera has been refused, which nothing else can wait for.
+	 * Whether the camera and the face model have finished starting up — or one of the two has failed,
+	 * which nothing else can wait for.
 	 */
 	get isReady(): boolean {
 		if (this._cameraState === 'denied') return true;
+		if (this._modelState === 'failed') return true;
 		return this._cameraState === 'on' && this._faceLandmarker !== undefined;
 	}
 
 	/**
 	 * Opens the camera and loads the face model, then keeps analysing frames.
-	 * A refused camera permission is recorded and reported, never thrown: the
-	 * rest of the application keeps working without the camera.
+	 * A refused camera permission and a model that will not load are both
+	 * recorded and reported, never thrown: the rest of the application keeps
+	 * working without them.
 	 */
 	async start(): Promise<void> {
 		if (this._cameraState === 'on') return;
@@ -117,15 +129,19 @@ export class PostureTracker {
 
 		try {
 			if (this._faceLandmarker === undefined) {
-				const vision = await FilesetResolver.forVisionTasks(PostureTracker._visionWasmPath());
+				this._modelState = 'loading';
+				const vision = await FilesetResolver.forVisionTasks(VISION_WEB_ASSEMBLY_PATH);
 				this._faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
 					baseOptions: { delegate: 'GPU', modelAssetPath: FACE_MODEL_URL },
 					numFaces: 1,
 					runningMode: 'VIDEO',
 				});
 			}
+			this._modelState = 'ready';
 		} catch {
-			// Without the model the camera picture still shows; readings stay empty.
+			// Without the model the camera picture still shows, and no reading is ever produced. The
+			// state is what the interface reads in order to say so instead of standing there silent.
+			this._modelState = 'failed';
 			return;
 		}
 
@@ -268,17 +284,6 @@ export class PostureTracker {
 			faceY: nose.y,
 			headTilt: Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x),
 		};
-	}
-
-	/** Returns the local extension WebAssembly directory when running in Chrome. */
-	private static _visionWasmPath(): string {
-		const extensionRuntime = (globalThis as typeof globalThis & {
-			chrome?: { runtime?: { id?: string; getURL?: (path: string) => string } };
-		}).chrome?.runtime;
-		if (extensionRuntime?.id !== undefined && extensionRuntime.getURL !== undefined) {
-			return extensionRuntime.getURL('wasm');
-		}
-		return MEDIA_PIPE_WASM_CDN_URL;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////
